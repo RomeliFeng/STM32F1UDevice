@@ -199,7 +199,7 @@ Status_Typedef UUSART::IRQUSART() {
  * return Status_Typedef
  */
 Status_Typedef UUSART::IRQDMATx() {
-	//暂时关闭DMA接收
+	//暂时关闭DMA发送
 	_DMAy_Channelx_Tx->CCR &= (uint16_t) (~DMA_CCR1_EN);
 
 	_DMAx->IFCR = _DMA_IT_TC_TX;
@@ -214,6 +214,7 @@ Status_Typedef UUSART::IRQDMATx() {
 			_DMAy_Channelx_Tx->CMAR = (uint32_t) _DMATxBuf.data;
 			_DMAy_Channelx_Tx->CNDTR = _DMATxBuf.tail;
 
+			//使能DMA发送
 			_DMAy_Channelx_Tx->CCR |= DMA_CCR1_EN;
 			return Status_Ok;
 		} else {
@@ -230,6 +231,7 @@ Status_Typedef UUSART::IRQDMATx() {
 			_DMAy_Channelx_Tx->CMAR = (uint32_t) _TxBuf.data;
 			_DMAy_Channelx_Tx->CNDTR = _TxBuf.tail;
 
+			//使能DMA发送
 			_DMAy_Channelx_Tx->CCR |= DMA_CCR1_EN;
 			return Status_Ok;
 		} else {
