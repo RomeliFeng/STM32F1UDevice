@@ -83,8 +83,8 @@ void UUSART::Init(uint32_t baud, uint16_t USART_Parity,
 	}
 	//中断初始化
 	ITInit(_mode);
-	//使能USART
-	_USARTx->CR1 |= CR1_UE_Set;
+	//使能USART(使用库函数兼容性好)
+	USART_Cmd(_USARTx, ENABLE);
 }
 
 /*
@@ -117,7 +117,7 @@ Status_Typedef UUSART::Write(uint8_t* data, uint16_t len) {
 		//非DMA模式
 		while (len--) {
 			_USARTx->DR = (*data++ & (uint16_t) 0x01FF);
-			while (!(_USARTx->SR & USART_FLAG_TXE))
+			while ((_USARTx->ISR & USART_FLAG_TXE) == RESET)
 				;
 		}
 	}
@@ -169,7 +169,8 @@ Status_Typedef UUSART::IRQUSART() {
 			_DMAy_Channelx_Rx->CCR |= DMA_CCR1_EN;
 		}
 		//清除标志位
-		USART_ReceiveData(_USARTx);
+		//Note @Romeli 在F0系列中IDLE等中断要手动清除
+		USART_ClearITPendingBit(_USARTx, USART_IT_IDLE);
 		//串口帧接收事件
 		if (ReceiveEvent != NULL) {
 			ReceiveEvent();
@@ -177,15 +178,18 @@ Status_Typedef UUSART::IRQUSART() {
 	}
 #ifndef USE_DMA
 	//串口字节接收中断置位
-	if ((_USARTx->SR & USART_FLAG_RXNE) != RESET) {
+	if ((staus & USART_FLAG_RXNE) != RESET) {
 		//搬运数据到缓冲区
 		_RxBuf.data[_RxBuf.tail] = uint8_t(_USARTx->DR);
 		_RxBuf.tail = uint16_t((_RxBuf.tail + 1) % _RxBuf.size);
 	}
 #endif
 	//串口帧错误中断
-	if ((_USARTx->SR & USART_FLAG_ORE) != RESET)
-		USART_ReceiveData(_USARTx);
+	if ((staus & USART_FLAG_ORE) != RESET) {
+		//清除标志位
+		//Note @Romeli 在F0系列中IDLE等中断要手动清除
+		USART_ClearITPendingBit(_USARTx, USART_IT_ORE);
+	}
 	return Status_Ok;
 }
 
@@ -239,7 +243,7 @@ Status_Typedef UUSART::IRQDMATx() {
 	}
 
 	if (_RS485Status == RS485Status_Enable) {
-		while ((_USARTx->SR & USART_FLAG_TC) != RESET)
+		while ((_USARTx->SR & USART_FLAG_TC) == RESET)
 			;
 		RS485DirCtl(RS485Dir_Rx);
 	}
