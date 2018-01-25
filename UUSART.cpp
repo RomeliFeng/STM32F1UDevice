@@ -19,6 +19,7 @@ UUSART::UUSART(uint16_t rxBufSize, uint16_t txBufSize, USART_TypeDef* USARTx,
 	_DMAy_Channelx_Rx = 0;
 	_DMAy_Channelx_Tx = 0;
 	
+	ReceiveEvent = NULL;
 	_mode = Mode_Interrupt;
 }
 
