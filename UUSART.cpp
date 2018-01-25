@@ -239,7 +239,7 @@ Status_Typedef UUSART::IRQDMATx() {
 	}
 
 	if (_RS485Status == RS485Status_Enable) {
-		while (_USARTx->SR & USART_FLAG_TC != RESET)
+		while ((_USARTx->SR & USART_FLAG_TC) != RESET)
 			;
 		RS485DirCtl(RS485Dir_Rx);
 	}
