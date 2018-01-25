@@ -5,7 +5,7 @@
  *      Author: Romeli
  */
 
-#include <Device/UPWM.h>
+#include <UPWM.h>
 
 UPWM* UPWM::_Pool[4];
 uint8_t UPWM::_PoolSp = 0;

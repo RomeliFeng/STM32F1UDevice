@@ -11,7 +11,7 @@
 #include <cmsis_device.h>
 #include <UDebug.h>
 #include <UMisc.h>
-#include <Device/UStepMotor.h>
+#include <UStepMotor.h>
 
 /*
  * author Romeli

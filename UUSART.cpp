@@ -5,7 +5,7 @@
  *      Author: Romeli
  */
 
-#include <Communication/UUSART.h>
+#include <UUSART.h>
 
 #define CR1_UE_Set                ((uint16_t)0x2000)  /*!< UUSART Enable Mask */
 #define CR1_UE_Reset              ((uint16_t)0xDFFF)  /*!< UUSART Disable Mask */

@@ -5,7 +5,7 @@
  *      Author: Romeli
  */
 
-#include <Device/UEncoder.h>
+#include <UEncoder.h>
 
 UEncoder* UEncoder::_Pool[4];
 uint8_t UEncoder::_PoolSp = 0;

@@ -12,9 +12,6 @@
 #include <Communication/USteam.h>
 #include <UDebug.h>
 #include <UMisc.h>
-#include <functional>
-
-using std::function;
 
 class UUSART: public USteam {
 public:
@@ -31,7 +28,7 @@ public:
 		RS485Dir_Tx, RS485Dir_Rx
 	};
 
-	function<void(void)> ReceiveEvent;
+	voidFun ReceiveEvent;
 
 	UUSART(uint16_t rxBufSize, uint16_t txBufSize, USART_TypeDef* USARTx,
 			UIT_Typedef itUSARTX);

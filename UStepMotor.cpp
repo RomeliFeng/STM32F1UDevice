@@ -5,8 +5,8 @@
  *      Author: Romeli
  */
 
-#include <Device/UStepMotor.h>
-#include <Device/UStepMotorAccDecUnit.h>
+#include <UStepMotor.h>
+#include <UStepMotorAccDecUnit.h>
 
 UStepMotor* UStepMotor::_Pool[4];
 uint8_t UStepMotor::_PoolSp = 0;
