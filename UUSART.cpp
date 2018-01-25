@@ -147,7 +147,7 @@ bool UUSART::CheckFrame() {
 Status_Typedef UUSART::IRQUSART() {
 	//读取串口标志寄存器
 	uint16_t staus = _USARTx->SR;
-	if ((staus & USART_FLAG_IDLE) != 0) {
+	if ((staus & USART_FLAG_IDLE) != RESET) {
 		//帧接收标志被触发
 		_newFrame = true;
 		if (_mode) {
@@ -177,14 +177,14 @@ Status_Typedef UUSART::IRQUSART() {
 	}
 #ifndef USE_DMA
 	//串口字节接收中断置位
-	if ((_USARTx->SR & USART_FLAG_RXNE) != 0) {
+	if ((_USARTx->SR & USART_FLAG_RXNE) != RESET) {
 		//搬运数据到缓冲区
 		_RxBuf.data[_RxBuf.tail] = uint8_t(_USARTx->DR);
 		_RxBuf.tail = uint16_t((_RxBuf.tail + 1) % _RxBuf.size);
 	}
 #endif
 	//串口帧错误中断
-	if ((_USARTx->SR & USART_FLAG_ORE) != 0)
+	if ((_USARTx->SR & USART_FLAG_ORE) != RESET)
 		USART_ReceiveData(USART3);
 	return Status_Ok;
 }
@@ -239,7 +239,7 @@ Status_Typedef UUSART::IRQDMATx() {
 	}
 
 	if (_RS485Status == RS485Status_Enable) {
-		while (!(_USARTx->SR & USART_FLAG_TC))
+		while (_USARTx->SR & USART_FLAG_TC != RESET)
 			;
 		RS485DirCtl(RS485Dir_Rx);
 	}
