@@ -117,7 +117,7 @@ Status_Typedef UUSART::Write(uint8_t* data, uint16_t len) {
 		//非DMA模式
 		while (len--) {
 			_USARTx->DR = (*data++ & (uint16_t) 0x01FF);
-			while ((_USARTx->ISR & USART_FLAG_TXE) == RESET)
+			while ((_USARTx->SR & USART_FLAG_TXE) == RESET)
 				;
 		}
 	}
