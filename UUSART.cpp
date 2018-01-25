@@ -185,7 +185,7 @@ Status_Typedef UUSART::IRQUSART() {
 #endif
 	//串口帧错误中断
 	if ((_USARTx->SR & USART_FLAG_ORE) != RESET)
-		USART_ReceiveData(USART3);
+		USART_ReceiveData(_USARTx);
 	return Status_Ok;
 }
 
