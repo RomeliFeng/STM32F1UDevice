@@ -21,6 +21,13 @@ UPWM::UPWM(TIM_TypeDef* TIMx, uint8_t OutputCh) {
 UPWM::~UPWM() {
 }
 
+/*
+ * author Romeli
+ * explain 使用频率和占空比初始化所有的PWM模块，默认不开启输出
+ * param1 period 定时器时钟/period=频率
+ * param2 pulse 占空比
+ * return void
+ */
 void UPWM::InitAll(uint16_t period, uint16_t pulse) {
 	//初始化池内所有单元
 	for (uint8_t i = 0; i < _PoolSp; ++i) {
@@ -32,18 +39,59 @@ void UPWM::InitAll(uint16_t period, uint16_t pulse) {
 	}
 }
 
+/*
+ * author Romeli
+ * explain 使用频率和占空比初始化PWM模块，默认不开启输出
+ * param1 period 定时器时钟/period=频率
+ * param2 pulse 占空比
+ * return void
+ */
 void UPWM::Init(uint16_t period, uint16_t pulse) {
 	GPIOInit();
 	TIMInit(period, pulse);
 	ITInit();
-}
-
-void UPWM::Enable() {
 	TIM_Enable(_TIMx);
 }
 
-void UPWM::Disable() {
-	TIM_Disable(_TIMx);
+/*
+ * author Romeli
+ * explain 开启PWM输出
+ * return void
+ */
+void UPWM::Enable(OutputCh_Typedef outputCh) {
+	if ((outputCh & _OutputCh & OutputCh_1) != 0) {
+		TIM_CCxCmd(_TIMx, TIM_Channel_1, TIM_CCx_Enable);
+	}
+	if ((outputCh & _OutputCh & OutputCh_2) != 0) {
+		TIM_CCxCmd(_TIMx, TIM_Channel_2, TIM_CCx_Enable);
+	}
+	if ((outputCh & _OutputCh & OutputCh_3) != 0) {
+		TIM_CCxCmd(_TIMx, TIM_Channel_3, TIM_CCx_Enable);
+	}
+	if ((outputCh & _OutputCh & OutputCh_4) != 0) {
+		TIM_CCxCmd(_TIMx, TIM_Channel_4, TIM_CCx_Enable);
+	}
+}
+
+/*
+ * author Romeli
+ * explain 关闭PWM输出
+ * param outputCh 需要关闭的通道
+ * return void
+ */
+void UPWM::Disable(OutputCh_Typedef outputCh) {
+	if ((outputCh & _OutputCh & OutputCh_1) != 0) {
+		TIM_CCxCmd(_TIMx, TIM_Channel_1, TIM_CCx_Disable);
+	}
+	if ((outputCh & _OutputCh & OutputCh_2) != 0) {
+		TIM_CCxCmd(_TIMx, TIM_Channel_2, TIM_CCx_Disable);
+	}
+	if ((outputCh & _OutputCh & OutputCh_3) != 0) {
+		TIM_CCxCmd(_TIMx, TIM_Channel_3, TIM_CCx_Disable);
+	}
+	if ((outputCh & _OutputCh & OutputCh_4) != 0) {
+		TIM_CCxCmd(_TIMx, TIM_Channel_4, TIM_CCx_Disable);
+	}
 }
 
 void UPWM::TIMInit(uint16_t period, uint16_t pulse) {

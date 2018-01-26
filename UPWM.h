@@ -24,14 +24,14 @@ public:
 		OutputCh_All = 0x0f
 	};
 
-	UPWM(TIM_TypeDef* TIMx, uint8_t OutputCh);
+	UPWM(TIM_TypeDef* TIMx, uint8_t outputCh);
 	virtual ~UPWM();
 
 	//初始化硬件
 	static void InitAll(uint16_t period, uint16_t pulse);
 	void Init(uint16_t period, uint16_t pulse);
-	void Enable();
-	void Disable();
+	void Enable(OutputCh_Typedef outputCh);
+	void Disable(OutputCh_Typedef outputCh);
 protected:
 	virtual void GPIOInit() = 0;
 	virtual void TIMRCCInit() = 0;
