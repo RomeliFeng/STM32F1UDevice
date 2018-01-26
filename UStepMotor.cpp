@@ -74,7 +74,7 @@ void UStepMotor::Init() {
 	GPIOInit();
 	TIMInit();
 	ITInit();
-	_TIMy_FRQ = SystemCoreClock / (TIM8->PSC + 1);
+	_TIMy_FRQ = SystemCoreClock / (_TIMx->PSC + 1);
 }
 
 void UStepMotor::InitAll() {
