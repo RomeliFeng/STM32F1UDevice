@@ -38,7 +38,7 @@ UStepMotorAccDecUnit::~UStepMotorAccDecUnit() {
 
 /*
  * author Romeli
- * explain 初始化速度计算单元（此函数应在派生类的对象中重写）
+ * explain 初始化速度计算单元
  * return void
  */
 void UStepMotorAccDecUnit::Init() {

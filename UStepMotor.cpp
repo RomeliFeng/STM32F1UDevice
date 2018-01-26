@@ -66,8 +66,7 @@ UStepMotor::~UStepMotor() {
 
 /*
  * author Romeli
- * explain
- * param
+ * explain 初始化当前步进电机模块
  * return void
  */
 void UStepMotor::Init() {
@@ -77,6 +76,11 @@ void UStepMotor::Init() {
 	_TIMy_FRQ = SystemCoreClock / (_TIMx->PSC + 1);
 }
 
+/*
+ * author Romeli
+ * explain 初始化所有步进电机模块
+ * return void
+ */
 void UStepMotor::InitAll() {
 	//初始化池内所有运动模块
 	for (uint8_t i = 0; i < _PoolSp; ++i) {
@@ -110,6 +114,13 @@ uint8_t UStepMotor::GetTheLowestPreemptionPriority() {
 	return preemptionPriority;
 }
 
+/*
+ * author Romeli
+ * explain 设置最大速度和加速度
+ * param1 maxSpeed 最大脉冲频率
+ * param2 accel 加速度
+ * return void
+ */
 void UStepMotor::SetSpeed(uint16_t maxSpeed, uint32_t accel) {
 	maxSpeed = maxSpeed < 150 ? uint16_t(150) : maxSpeed;
 	accel = accel < 1500 ? 1500 : accel;
@@ -118,6 +129,12 @@ void UStepMotor::SetSpeed(uint16_t maxSpeed, uint32_t accel) {
 	_Decel = accel;
 }
 
+/*
+ * author Romeli
+ * explain 设置参考方向
+ * param dir 新的参考方向
+ * return void
+ */
 void UStepMotor::SetRelativeDir(Dir_Typedef dir) {
 	_RelativeDir = dir;
 }
