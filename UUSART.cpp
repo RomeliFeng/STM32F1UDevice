@@ -19,7 +19,7 @@ UUSART::UUSART(uint16_t rxBufSize, uint16_t txBufSize, USART_TypeDef* USARTx,
 	_DMAy_Channelx_Rx = 0;
 	_DMAy_Channelx_Tx = 0;
 	
-	ReceiveEvent = NULL;
+	ReceiveEvent = nullptr;
 	_mode = Mode_Interrupt;
 }
 
@@ -172,7 +172,7 @@ Status_Typedef UUSART::IRQUSART() {
 		//Note @Romeli 在F0系列中IDLE等中断要手动清除
 		USART_ClearITPendingBit(_USARTx, USART_IT_IDLE);
 		//串口帧接收事件
-		if (ReceiveEvent != NULL) {
+		if (ReceiveEvent != nullptr) {
 			ReceiveEvent();
 		}
 	}

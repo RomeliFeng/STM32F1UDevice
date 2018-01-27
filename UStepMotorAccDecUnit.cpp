@@ -33,7 +33,6 @@ UStepMotorAccDecUnit::UStepMotorAccDecUnit(TIM_TypeDef* TIMx,
 }
 
 UStepMotorAccDecUnit::~UStepMotorAccDecUnit() {
-	// TODO Auto-generated destructor stub
 }
 
 /*
