@@ -9,11 +9,11 @@
 #define UUSART_H_
 
 #include <cmsis_device.h>
-#include <Communication/USteam.h>
+#include <Communication/UStream.h>
 #include <UDebug.h>
 #include <UMisc.h>
 
-class UUSART: public USteam {
+class UUSART: public UStream {
 public:
 
 	enum Mode_Typedef {
@@ -64,8 +64,8 @@ private:
 	volatile bool _newFrame = false;
 	RS485Status_Typedef _RS485Status = RS485Status_Disable;
 
-	DataSteam_Typedef _DMARxBuf;
-	DataSteam_Typedef _DMATxBuf;
+	Buffer_Typedef _DMARxBuf;
+	Buffer_Typedef _DMATxBuf;
 
 	UIT_Typedef _ITUSARTx;
 	UIT_Typedef _ITDMAxRx;
@@ -79,7 +79,7 @@ private:
 	void ITInit(Mode_Typedef mode);
 	void DMAInit();
 
-	Status_Typedef DMASend(DataSteam_Typedef *stack, DataSteam_Typedef *txBuf);
+	Status_Typedef DMASend(Buffer_Typedef *buffer, Buffer_Typedef *txBuf);
 };
 
 #endif /* UUSART_H_ */

@@ -12,7 +12,7 @@
 
 UUSART::UUSART(uint16_t rxBufSize, uint16_t txBufSize, USART_TypeDef* USARTx,
 		UIT_Typedef itUSARTx) :
-		USteam(rxBufSize, txBufSize), _USARTx(USARTx), _ITUSARTx(itUSARTx) {
+		UStream(rxBufSize, txBufSize), _USARTx(USARTx), _ITUSARTx(itUSARTx) {
 	//默认设置
 	_DMAx = 0;
 	_DMA_IT_TC_TX = 0;
@@ -29,7 +29,7 @@ UUSART::UUSART(uint16_t rxBufSize,
 		DMA_Channel_TypeDef* DMAy_Channelx_Rx,
 		DMA_Channel_TypeDef* DMAy_Channelx_Tx, UIT_Typedef itDMAxRx,
 		UIT_Typedef itDMAxTx) :
-		USteam(rxBufSize, txBufSize) {
+		UStream(rxBufSize, txBufSize) {
 
 	_USARTx = USARTx;
 	_ITUSARTx = itUSARTx;
@@ -95,19 +95,19 @@ void UUSART::Init(uint32_t baud, uint16_t USART_Parity,
  * return Status_Typedef
  */
 Status_Typedef UUSART::Write(uint8_t* data, uint16_t len) {
-	DataSteam_Typedef statck;
-	statck.data = data;
-	statck.tail = len;
+	Buffer_Typedef buffer;
+	buffer.data = data;
+	buffer.tail = len;
 	if (_mode == Mode_DMA) {
-		while (statck.tail != 0) {
+		while (buffer.tail != 0) {
 			if ((_DMAy_Channelx_Tx->CMAR != (uint32_t) _TxBuf.data)
 					&& (_TxBuf.size - _TxBuf.tail != 0)) {
 				//若缓冲区1空闲，并且有空闲空间
-				DMASend(&statck, &_TxBuf);
+				DMASend(&buffer, &_TxBuf);
 			} else if ((_DMAy_Channelx_Tx->CMAR != (uint32_t) _DMATxBuf.data)
 					&& (_DMATxBuf.size - _DMATxBuf.tail != 0)) {
 				//若缓冲区2空闲，并且有空闲空间
-				DMASend(&statck, &_DMATxBuf);
+				DMASend(&buffer, &_DMATxBuf);
 			} else {
 				//发送繁忙，两个缓冲区均在使用或已满
 				//FIXME@romeli 需要添加超时返回代码
@@ -445,24 +445,24 @@ void UUSART::DMAInit() {
 	DMA_Cmd(_DMAy_Channelx_Rx, ENABLE);
 }
 
-Status_Typedef UUSART::DMASend(DataSteam_Typedef * steam,
-		DataSteam_Typedef * txBuf) {
+Status_Typedef UUSART::DMASend(Buffer_Typedef * buffer,
+		Buffer_Typedef * txBuf) {
 	uint16_t avaSize, end;
-	if (steam->tail != 0) {
+	if (buffer->tail != 0) {
 		//置位忙标志，防止计算中DMA自动加载发送缓冲
 		txBuf->busy = true;
 		//计算缓冲区空闲空间大小
 		avaSize = uint16_t(txBuf->size - txBuf->tail);
 		//根据空闲空间大小计算搬移结束位置
-		if (steam->tail > avaSize) {
-			end = uint16_t(steam->tail - avaSize);
+		if (buffer->tail > avaSize) {
+			end = uint16_t(buffer->tail - avaSize);
 		} else {
 			end = 0;
 		}
 
 		//填充数据，并且偏移指针
-		for (; steam->tail > end; --steam->tail) {
-			txBuf->data[txBuf->tail++] = *steam->data++;
+		for (; buffer->tail > end; --buffer->tail) {
+			txBuf->data[txBuf->tail++] = *buffer->data++;
 		}
 		if (!_DMATxBusy) {
 			//DMA发送空闲，发送新的缓冲
