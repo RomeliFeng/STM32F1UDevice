@@ -6,6 +6,7 @@
  */
 
 #include <UPWM.h>
+#include <UDebug.h>
 
 UPWM* UPWM::_Pool[4];
 uint8_t UPWM::_PoolSp = 0;
