@@ -79,7 +79,8 @@ private:
 	void ITInit(Mode_Typedef mode);
 	void DMAInit();
 
-	Status_Typedef DMASend(Buffer_Typedef *buffer, Buffer_Typedef *txBuf);
+	Status_Typedef DMASend(uint8_t *&data, uint16_t &len,
+			Buffer_Typedef &txBuf);
 };
 
 #endif /* UUSART_H_ */

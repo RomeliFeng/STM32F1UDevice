@@ -6,6 +6,7 @@
  */
 
 #include <UUSART.h>
+#include <cstring>
 
 #define CR1_UE_Set                ((uint16_t)0x2000)  /*!< UUSART Enable Mask */
 #define CR1_UE_Reset              ((uint16_t)0xDFFF)  /*!< UUSART Disable Mask */
@@ -42,11 +43,11 @@ UUSART::UUSART(uint16_t rxBufSize,
 	CalcDMATC();
 
 	_DMARxBuf.data = 0;
-	_DMARxBuf.tail = 0;
+	_DMARxBuf.end = 0;
 	_DMARxBuf.busy = false;
 
 	_DMATxBuf.data = 0;
-	_DMATxBuf.tail = 0;
+	_DMATxBuf.end = 0;
 	_DMATxBuf.busy = false;
 
 	_mode = Mode_DMA;
@@ -95,19 +96,16 @@ void UUSART::Init(uint32_t baud, uint16_t USART_Parity,
  * return Status_Typedef
  */
 Status_Typedef UUSART::Write(uint8_t* data, uint16_t len) {
-	Buffer_Typedef buffer;
-	buffer.data = data;
-	buffer.tail = len;
 	if (_mode == Mode_DMA) {
-		while (buffer.tail != 0) {
+		while (len != 0) {
 			if ((_DMAy_Channelx_Tx->CMAR != (uint32_t) _TxBuf.data)
-					&& (_TxBuf.size - _TxBuf.tail != 0)) {
+					&& (_TxBuf.size - _TxBuf.end != 0)) {
 				//若缓冲区1空闲，并且有空闲空间
-				DMASend(&buffer, &_TxBuf);
+				DMASend(data, len, _TxBuf);
 			} else if ((_DMAy_Channelx_Tx->CMAR != (uint32_t) _DMATxBuf.data)
-					&& (_DMATxBuf.size - _DMATxBuf.tail != 0)) {
+					&& (_DMATxBuf.size - _DMATxBuf.end != 0)) {
 				//若缓冲区2空闲，并且有空闲空间
-				DMASend(&buffer, &_DMATxBuf);
+				DMASend(data, len, _DMATxBuf);
 			} else {
 				//发送繁忙，两个缓冲区均在使用或已满
 				//FIXME@romeli 需要添加超时返回代码
@@ -162,8 +160,8 @@ Status_Typedef UUSART::IRQUSART() {
 			_DMAy_Channelx_Rx->CNDTR = _RxBuf.size;
 			//循环搬运数据
 			for (uint16_t i = 0; i < len; ++i) {
-				_RxBuf.data[_RxBuf.tail] = _DMARxBuf.data[i];
-				_RxBuf.tail = uint16_t((_RxBuf.tail + 1) % _RxBuf.size);
+				_RxBuf.data[_RxBuf.end] = _DMARxBuf.data[i];
+				_RxBuf.end = uint16_t((_RxBuf.end + 1) % _RxBuf.size);
 			}
 			//开启DMA接收
 			_DMAy_Channelx_Rx->CCR |= DMA_CCR1_EN;
@@ -180,8 +178,8 @@ Status_Typedef UUSART::IRQUSART() {
 	//串口字节接收中断置位
 	if ((staus & USART_FLAG_RXNE) != RESET) {
 		//搬运数据到缓冲区
-		_RxBuf.data[_RxBuf.tail] = uint8_t(_USARTx->DR);
-		_RxBuf.tail = uint16_t((_RxBuf.tail + 1) % _RxBuf.size);
+		_RxBuf.data[_RxBuf.end] = uint8_t(_USARTx->DR);
+		_RxBuf.end = uint16_t((_RxBuf.end + 1) % _RxBuf.size);
 	}
 #endif
 	//串口帧错误中断
@@ -207,12 +205,12 @@ Status_Typedef UUSART::IRQDMATx() {
 	//判断当前使用的缓冲通道
 	if (_DMAy_Channelx_Tx->CMAR == (uint32_t) _TxBuf.data) {
 		//缓冲区1发送完成，置位指针
-		_TxBuf.tail = 0;
+		_TxBuf.end = 0;
 		//判断缓冲区2是否有数据，并且忙标志未置位（防止填充到一半发送出去）
-		if (_DMATxBuf.tail != 0 && _DMATxBuf.busy == false) {
+		if (_DMATxBuf.end != 0 && _DMATxBuf.busy == false) {
 			//当前使用缓冲区切换为缓冲区2，并加载DMA发送
 			_DMAy_Channelx_Tx->CMAR = (uint32_t) _DMATxBuf.data;
-			_DMAy_Channelx_Tx->CNDTR = _DMATxBuf.tail;
+			_DMAy_Channelx_Tx->CNDTR = _DMATxBuf.end;
 
 			//使能DMA发送
 			_DMAy_Channelx_Tx->CCR |= DMA_CCR1_EN;
@@ -224,12 +222,12 @@ Status_Typedef UUSART::IRQDMATx() {
 		}
 	} else if (_DMAy_Channelx_Tx->CMAR == (uint32_t) _DMATxBuf.data) {
 		//缓冲区2发送完成，置位指针
-		_DMATxBuf.tail = 0;
+		_DMATxBuf.end = 0;
 		//判断缓冲区1是否有数据，并且忙标志未置位（防止填充到一半发送出去）
-		if (_TxBuf.tail != 0 && _TxBuf.busy == false) {
+		if (_TxBuf.end != 0 && _TxBuf.busy == false) {
 			//当前使用缓冲区切换为缓冲区1，并加载DMA发送
 			_DMAy_Channelx_Tx->CMAR = (uint32_t) _TxBuf.data;
-			_DMAy_Channelx_Tx->CNDTR = _TxBuf.tail;
+			_DMAy_Channelx_Tx->CNDTR = _TxBuf.end;
 
 			//使能DMA发送
 			_DMAy_Channelx_Tx->CCR |= DMA_CCR1_EN;
@@ -445,25 +443,33 @@ void UUSART::DMAInit() {
 	DMA_Cmd(_DMAy_Channelx_Rx, ENABLE);
 }
 
-Status_Typedef UUSART::DMASend(Buffer_Typedef * buffer,
-		Buffer_Typedef * txBuf) {
-	uint16_t avaSize, end;
-	if (buffer->tail != 0) {
+/*
+ * author Romeli
+ * explain 使用DMA发送数据（数据长度为使用的缓冲区的剩余空间大小）
+ * param1 data 指向数据的指针的引用 NOTE @Romeli 这里使用的指针的引用，用于发送数据后移动指针位置
+ * param2 len 数据长度的引用
+ * param3 txBuf 使用的缓冲区的引用
+ * return Status_Typedef
+ */
+Status_Typedef UUSART::DMASend(uint8_t *&data, uint16_t &len,
+		Buffer_Typedef &txBuf) {
+	uint16_t avaSize, copySize;
+	if (len != 0) {
 		//置位忙标志，防止计算中DMA自动加载发送缓冲
-		txBuf->busy = true;
+		txBuf.busy = true;
 		//计算缓冲区空闲空间大小
-		avaSize = uint16_t(txBuf->size - txBuf->tail);
-		//根据空闲空间大小计算搬移结束位置
-		if (buffer->tail > avaSize) {
-			end = uint16_t(buffer->tail - avaSize);
-		} else {
-			end = 0;
-		}
+		avaSize = uint16_t(txBuf.size - txBuf.end);
+		//计算可以发送的字节大小
+		copySize = avaSize < len ? avaSize : len;
+		//拷贝字节到缓冲区
+		memcpy(txBuf.data + txBuf.end, data, copySize);
+		//偏移发送缓冲区的末尾
+		txBuf.end = uint16_t(txBuf.end + copySize);
+		//偏移掉已发送字节
+		data += copySize;
+		//长度减去已发送长度
+		len = uint16_t(len - copySize);
 
-		//填充数据，并且偏移指针
-		for (; buffer->tail > end; --buffer->tail) {
-			txBuf->data[txBuf->tail++] = *buffer->data++;
-		}
 		if (!_DMATxBusy) {
 			//DMA发送空闲，发送新的缓冲
 			_DMATxBusy = true;
@@ -473,14 +479,14 @@ Status_Typedef UUSART::DMASend(Buffer_Typedef * buffer,
 			}
 
 			//设置DMA地址
-			_DMAy_Channelx_Tx->CMAR = (uint32_t) txBuf->data;
-			_DMAy_Channelx_Tx->CNDTR = txBuf->tail;
+			_DMAy_Channelx_Tx->CMAR = (uint32_t) txBuf.data;
+			_DMAy_Channelx_Tx->CNDTR = txBuf.end;
 
 			//使能DMA开始发送
 			_DMAy_Channelx_Tx->CCR |= DMA_CCR1_EN;
 		}
 		//解除忙标志
-		txBuf->busy = false;
+		txBuf.busy = false;
 	}
 	return Status_Ok;
 }
