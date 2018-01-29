@@ -46,13 +46,13 @@ public:
 	//设置默认电机方向
 	void SetRelativeDir(Dir_Typedef dir);
 	//设置保护限位
-	inline void SetCWLimit(uint8_t cwLimit) {
+	inline void SetCWLimit(uint32_t cwLimit) {
 		_CWLimit = cwLimit;
 	}
-	inline void SetCCWLimit(uint8_t ccwLimit) {
+	inline void SetCCWLimit(uint32_t ccwLimit) {
 		_CCWLimit = ccwLimit;
 	}
-	inline void SetLimit(uint8_t cwLimit, uint8_t ccwLimit) {
+	inline void SetLimit(uint32_t cwLimit, uint32_t ccwLimit) {
 		SetCWLimit(cwLimit);
 		SetCCWLimit(ccwLimit);
 	}
@@ -78,7 +78,7 @@ public:
 		SetEnPin(DISABLE);
 	}
 	//保护检测
-	void SafetyProtect(uint8_t limit);
+	void SafetyProtect(uint32_t limit);
 
 	void IRQ();
 protected:
@@ -108,8 +108,8 @@ private:
 	uint32_t _Decel;	//减速度
 	uint16_t _MaxSpeed;	//最大速度
 
-	uint8_t _CWLimit; //正转保护限位
-	uint8_t _CCWLimit; //反转保护限位
+	uint32_t _CWLimit; //正转保护限位
+	uint32_t _CCWLimit; //反转保护限位
 
 	Dir_Typedef _RelativeDir; //实际方向对应
 	Dir_Typedef _CurDir; //当前方向

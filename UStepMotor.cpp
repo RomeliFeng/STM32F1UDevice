@@ -243,7 +243,7 @@ void UStepMotor::StopSlow() {
  * explain	检测是否可以安全移动（需要在派生类中重写）
  * return bool 是否安全可移动
  */
-void UStepMotor::SafetyProtect(uint8_t limit) {
+void UStepMotor::SafetyProtect(uint32_t limit) {
 	switch (_CurDir) {
 	case Dir_CW:
 		if ((limit & _CWLimit) != 0) {
