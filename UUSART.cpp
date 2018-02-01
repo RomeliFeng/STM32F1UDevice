@@ -168,7 +168,8 @@ Status_Typedef UUSART::IRQUSART() {
 		}
 		//清除标志位
 		//Note @Romeli 在F0系列中IDLE等中断要手动清除
-		USART_ClearITPendingBit(_USARTx, USART_IT_IDLE);
+		USART_ReceiveData(_USARTx);
+		//USART_ClearITPendingBit(_USARTx, USART_IT_IDLE);
 		//串口帧接收事件
 		if (ReceiveEvent != nullptr) {
 			ReceiveEvent();
