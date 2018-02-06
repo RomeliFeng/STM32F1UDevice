@@ -95,6 +95,21 @@ void UPWM::Disable(OutputCh_Typedef outputCh) {
 	}
 }
 
+void UPWM::SetPulse(uint8_t outputCh, uint16_t pulse) {
+	if ((outputCh & _OutputCh & OutputCh_1) != 0) {
+		_TIMx->CCR1 = pulse;
+	}
+	if ((outputCh & _OutputCh & OutputCh_2) != 0) {
+		_TIMx->CCR2 = pulse;
+	}
+	if ((outputCh & _OutputCh & OutputCh_3) != 0) {
+		_TIMx->CCR3 = pulse;
+	}
+	if ((outputCh & _OutputCh & OutputCh_4) != 0) {
+		_TIMx->CCR4 = pulse;
+	}
+}
+
 void UPWM::TIMInit(uint16_t period, uint16_t pulse) {
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStructure;
 	TIM_OCInitTypeDef TIM_OCInitStructure;
@@ -147,3 +162,4 @@ void UPWM::TIMInit(uint16_t period, uint16_t pulse) {
 
 void UPWM::ITInit() {
 }
+

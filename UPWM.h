@@ -31,6 +31,7 @@ public:
 	void Init(uint16_t period, uint16_t pulse);
 	void Enable(OutputCh_Typedef outputCh);
 	void Disable(OutputCh_Typedef outputCh);
+	void SetPulse(uint8_t outputCh, uint16_t pulse);
 protected:
 	virtual void GPIOInit() = 0;
 	virtual void TIMRCCInit() = 0;
