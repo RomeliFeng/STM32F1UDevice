@@ -178,7 +178,7 @@ void UStepMotorAccDecUnit::Start(Mode_Typedef mode) {
 		initSpeed = STEP_MOTOR_MIN_SPEED;
 		break;
 	case Mode_Decel: {
-		uint16_t speed = _TIMx->CNT;
+		uint16_t speed = uint16_t(_TIMx->CNT);
 		_TIMx->PSC = (uint16_t) (SystemCoreClock / _Decel);
 		_TIMx->ARR = (uint16_t) (_MaxSpeed - STEP_MOTOR_MIN_SPEED);
 		initSpeed = (uint16_t) (_MaxSpeed - speed);
@@ -215,7 +215,7 @@ void UStepMotorAccDecUnit::Stop() {
  */
 uint16_t UStepMotorAccDecUnit::GetCurSpeed() {
 	//读取当前速度
-	uint16_t speed = _Done ? _TIMx->ARR : _TIMx->CNT;
+	uint16_t speed = uint16_t(_Done ? _TIMx->ARR : _TIMx->CNT);
 	switch (_Mode) {
 	case Mode_Accel:
 		return speed;
