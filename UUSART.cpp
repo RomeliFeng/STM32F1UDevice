@@ -20,6 +20,7 @@ UUSART::UUSART(uint16_t rxBufSize, uint16_t txBufSize, USART_TypeDef* USARTx,
 	_DMAy_Channelx_Rx = 0;
 	_DMAy_Channelx_Tx = 0;
 	
+	_EPool = nullptr;
 	ReceiveEvent = nullptr;
 	_mode = Mode_Interrupt;
 }
@@ -41,6 +42,9 @@ UUSART::UUSART(uint16_t rxBufSize,
 	_ITDMAxTx = itDMAxTx;
 
 	CalcDMATC();
+
+	_EPool = nullptr;
+	ReceiveEvent = nullptr;
 
 	_DMARxBuf.data = 0;
 	_DMARxBuf.end = 0;
@@ -102,7 +106,8 @@ Status_Typedef UUSART::Write(uint8_t* data, uint16_t len) {
 					&& (_TxBuf.size - _TxBuf.end != 0)) {
 				//若缓冲区1空闲，并且有空闲空间
 				DMASend(data, len, _TxBuf);
-			} else if ((_DMAy_Channelx_Tx->CMAR != (uint32_t) _DMATxBuf.data)
+			} else if ((_DMAy_Channelx_Tx->CMAR
+					!= (uint32_t) _DMATxBuf.data)
 					&& (_DMATxBuf.size - _DMATxBuf.end != 0)) {
 				//若缓冲区2空闲，并且有空闲空间
 				DMASend(data, len, _DMATxBuf);
@@ -139,6 +144,18 @@ bool UUSART::CheckFrame() {
 
 /*
  * author Romeli
+ * explain 设置事件触发时自动加入事件池
+ * param1 rcvEvent ReceiveEvent的回调函数
+ * param2 pool 触发时会加入的的事件池
+ * return void
+ */
+void UUSART::SetEventPool(voidFun rcvEvent, UEventPool& pool) {
+	ReceiveEvent = rcvEvent;
+	_EPool = &pool;
+}
+
+/*
+ * author Romeli
  * explain 串口接收中断
  * return Status_Typedef
  */
@@ -152,7 +169,8 @@ Status_Typedef UUSART::IRQUSART() {
 			//关闭DMA接收
 			_DMAy_Channelx_Rx->CCR &= (uint16_t) (~DMA_CCR1_EN);
 
-			uint16_t len = uint16_t(_RxBuf.size - _DMAy_Channelx_Rx->CNDTR);
+			uint16_t len = uint16_t(
+					_RxBuf.size - _DMAy_Channelx_Rx->CNDTR);
 			//清除DMA标志
 //			_DMAx->IFCR = DMA1_FLAG_GL3 | DMA1_FLAG_TC3 | DMA1_FLAG_TE3
 //					| DMA1_FLAG_HT3;
@@ -172,7 +190,11 @@ Status_Typedef UUSART::IRQUSART() {
 		//USART_ClearITPendingBit(_USARTx, USART_IT_IDLE);
 		//串口帧接收事件
 		if (ReceiveEvent != nullptr) {
-			ReceiveEvent();
+			if (_EPool != nullptr) {
+				_EPool->Insert(ReceiveEvent);
+			} else {
+				ReceiveEvent();
+			}
 		}
 	}
 #ifndef USE_DMA

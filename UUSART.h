@@ -10,6 +10,7 @@
 
 #include <cmsis_device.h>
 #include <Communication/UStream.h>
+#include <Tool/UEventPool.h>
 #include <UDebug.h>
 #include <UMisc.h>
 
@@ -46,6 +47,8 @@ public:
 
 	bool CheckFrame();
 
+	void SetEventPool(voidFun rcvEvent, UEventPool &pool);
+
 	Status_Typedef IRQUSART();
 	Status_Typedef IRQDMATx();
 protected:
@@ -63,6 +66,8 @@ private:
 	volatile bool _DMATxBusy = false;
 	volatile bool _newFrame = false;
 	RS485Status_Typedef _RS485Status = RS485Status_Disable;
+
+	UEventPool* _EPool;
 
 	Buffer_Typedef _DMARxBuf;
 	Buffer_Typedef _DMATxBuf;
