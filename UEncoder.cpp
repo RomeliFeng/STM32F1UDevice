@@ -95,7 +95,9 @@ void UEncoder::TIMInit() {
 
 	TIMRCCInit();
 
+	TIM_TimeBaseStructInit(&TIM_TimeBaseInitStructure);
 	TIM_DeInit(_TIMx);
+
 	TIM_TimeBaseStructInit(&TIM_TimeBaseInitStructure);
 	TIM_TimeBaseInitStructure.TIM_CounterMode = TIM_CounterMode_Up;
 	TIM_TimeBaseInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;

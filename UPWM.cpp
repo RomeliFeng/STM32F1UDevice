@@ -116,7 +116,9 @@ void UPWM::TIMInit(uint16_t period, uint16_t pulse) {
 
 	TIMRCCInit();
 
+	TIM_TimeBaseStructInit(&TIM_TimeBaseInitStructure);
 	TIM_DeInit(_TIMx);
+
 	TIM_TimeBaseStructInit(&TIM_TimeBaseInitStructure);
 	TIM_TimeBaseInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
 	TIM_TimeBaseInitStructure.TIM_CounterMode = TIM_CounterMode_Up;

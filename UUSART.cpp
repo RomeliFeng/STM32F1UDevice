@@ -352,7 +352,9 @@ void UUSART::USARTInit(uint32_t baud, uint16_t USART_Parity) {
 	USARTRCCInit();
 
 	//配置USART3 全双工 停止位1 无校验
+	USART_StructInit(&USART_InitStructure);
 	USART_DeInit(_USARTx);
+
 	USART_InitStructure.USART_BaudRate = baud;
 	USART_InitStructure.USART_HardwareFlowControl =
 	USART_HardwareFlowControl_None;
@@ -431,7 +433,9 @@ void UUSART::DMAInit() {
 	//开启DMA时钟
 	DMARCCInit();
 
+	DMA_StructInit(&DMA_InitStructure);
 	DMA_DeInit(_DMAy_Channelx_Tx);
+
 	DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t) (&_USARTx->DR);
 	DMA_InitStructure.DMA_MemoryBaseAddr = 0;				//临时设置，无效
 	DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralDST;
