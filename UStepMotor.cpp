@@ -378,7 +378,6 @@ void UStepMotor::TIMInit() {
 
 	TIMRCCInit();
 
-	TIM_TimeBaseStructInit(&TIM_TimeBaseInitStructure);
 	TIM_DeInit(_TIMx);
 
 	TIM_TimeBaseInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;

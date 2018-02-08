@@ -95,7 +95,6 @@ void UEncoder::TIMInit() {
 
 	TIMRCCInit();
 
-	TIM_TimeBaseStructInit(&TIM_TimeBaseInitStructure);
 	TIM_DeInit(_TIMx);
 
 	TIM_TimeBaseStructInit(&TIM_TimeBaseInitStructure);

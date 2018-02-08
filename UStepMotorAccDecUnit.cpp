@@ -268,8 +268,6 @@ void UStepMotorAccDecUnit::TIMInit() {
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStructure;
 
 	TIMRCCInit();
-
-	TIM_TimeBaseStructInit(&TIM_TimeBaseInitStructure);
 	TIM_DeInit(_TIMx);
 
 	TIM_TimeBaseInitStructure.TIM_CounterMode = TIM_CounterMode_Up;
