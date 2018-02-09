@@ -14,6 +14,11 @@
 
 class UEncoder {
 public:
+	enum Dir_Typedef
+		:uint8_t {
+		Dir_Positive, Dir_Negtive
+	};
+
 	UEncoder(TIM_TypeDef* TIMx, UIT_Typedef& it);
 	virtual ~UEncoder();
 
@@ -21,9 +26,10 @@ public:
 	static void InitAll();
 	void Init();
 	//设置当前位置
-	void Set(int32_t pos);
+	void SetRelativeDir(Dir_Typedef dir);
+	void SetPos(int32_t pos);
 	//获取当前位置
-	int32_t Get() const;
+	int32_t GetPos() const;
 
 	//中断服务子函数
 	void IRQ();
@@ -39,6 +45,7 @@ private:
 
 	UIT_Typedef _IT; //中断优先级
 	volatile int16_t _ExCNT;
+	Dir_Typedef _RelativeDir;
 
 	void TIMInit();
 	void ITInit();

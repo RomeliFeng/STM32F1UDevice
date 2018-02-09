@@ -15,6 +15,7 @@ UEncoder::UEncoder(TIM_TypeDef* TIMx, UIT_Typedef& it) {
 	_IT = it;
 
 	_ExCNT = 0;
+	_RelativeDir = Dir_Positive;
 
 	//自动将对象指针加入资源池
 	_Pool[_PoolSp++] = this;
@@ -54,7 +55,23 @@ void UEncoder::InitAll() {
 	}
 }
 
-void UEncoder::Set(int32_t pos) {
+/*
+ * author Romeli
+ * explain 设置编码器方向，可以把脉冲反向
+ * param dir 编码器方向
+ * return void
+ */
+void UEncoder::SetRelativeDir(Dir_Typedef dir) {
+	_RelativeDir = dir;
+}
+
+/*
+ * author Romeli
+ * explain 设置编码器位置
+ * param pos 编码器位置
+ * return void
+ */
+void UEncoder::SetPos(int32_t pos) {
 	if (pos >= 0) {
 		_ExCNT = uint16_t(pos / 0x10000);
 		_TIMx->CNT = uint16_t(pos - (_ExCNT * 0x10000));
@@ -65,10 +82,21 @@ void UEncoder::Set(int32_t pos) {
 	}
 }
 
-int32_t UEncoder::Get() const {
-	return ((int32_t) _ExCNT * 0x10000) + _TIMx->CNT;
+/*
+ * author Romeli
+ * explain 读取编码器当前位置
+ * return int32_t 当前位置
+ */
+int32_t UEncoder::GetPos() const {
+	int32_t pos = int32_t(_ExCNT) * 0x10000 + _TIMx->CNT;
+	return _RelativeDir == Dir_Negtive ? -pos : pos;
 }
 
+/*
+ * author Romeli
+ * explain 中断处理函数，当定时器溢出时累加额外计数
+ * return void
+ */
 void UEncoder::IRQ() {
 	if (_TIMx->CNT <= 0x7fff) {
 		++_ExCNT;
@@ -90,6 +118,11 @@ void UEncoder::GPIOInit() {
 	 GPIO_Init(GPIOA, &GPIO_InitStructure);*/
 }
 
+/*
+ * author Romeli
+ * explain 初始化定时器为编码器模式，4分频采样
+ * return void
+ */
 void UEncoder::TIMInit() {
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStructure;
 
@@ -97,7 +130,6 @@ void UEncoder::TIMInit() {
 
 	TIM_DeInit(_TIMx);
 
-	TIM_TimeBaseStructInit(&TIM_TimeBaseInitStructure);
 	TIM_TimeBaseInitStructure.TIM_CounterMode = TIM_CounterMode_Up;
 	TIM_TimeBaseInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
 	TIM_TimeBaseInitStructure.TIM_Prescaler = 0;
@@ -116,6 +148,11 @@ void UEncoder::TIMInit() {
 	_TIMx->CNT = 0;
 }
 
+/*
+ * author Romeli
+ * explain 初始化定时器溢出中断
+ * return void
+ */
 void UEncoder::ITInit() {
 	NVIC_InitTypeDef NVIC_InitStructure;
 
