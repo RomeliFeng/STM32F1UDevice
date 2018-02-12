@@ -22,7 +22,7 @@ public:
 	};
 
 	enum RS485Status_Typedef {
-		RS485Status_Enable, RS485Status_Disable
+		RS485Status_Disable, RS485Status_Enable
 	};
 
 	enum RS485Dir_Typedef {
