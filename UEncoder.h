@@ -9,8 +9,7 @@
 #define UENCODER_H_
 
 #include <cmsis_device.h>
-#include <UDebug.h>
-#include <UMisc.h>
+#include <Misc/UMisc.h>
 
 class UEncoder {
 public:

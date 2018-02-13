@@ -6,6 +6,7 @@
  */
 
 #include <UEncoder.h>
+#include <Misc/UDebug.h>
 
 UEncoder* UEncoder::_Pool[4];
 uint8_t UEncoder::_PoolSp = 0;

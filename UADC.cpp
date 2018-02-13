@@ -6,7 +6,7 @@
  */
 
 #include <UADC.h>
-#include <UDebug.h>
+#include <Misc/UDebug.h>
 
 /* ADC Software start mask */
 #define CR2_EXTTRIG_SWSTART_Set     ((uint32_t)0x00500000)

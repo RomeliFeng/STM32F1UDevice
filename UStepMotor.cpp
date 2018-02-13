@@ -7,6 +7,7 @@
 
 #include <UStepMotor.h>
 #include <UStepMotorAccDecUnit.h>
+#include <Misc/UDebug.h>
 
 UStepMotor* UStepMotor::_Pool[4];
 uint8_t UStepMotor::_PoolSp = 0;

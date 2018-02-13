@@ -10,9 +10,8 @@
 
 #include <cmsis_device.h>
 #include <Communication/UStream.h>
-#include <Tool/UEventPool.h>
-#include <UDebug.h>
-#include <UMisc.h>
+#include <Event/UEventPool.h>
+#include <Misc/UMisc.h>
 
 class UUSART: public UStream {
 public:

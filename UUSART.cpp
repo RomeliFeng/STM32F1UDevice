@@ -6,6 +6,7 @@
  */
 
 #include <UUSART.h>
+#include <Misc/UDebug.h>
 #include <cstring>
 
 #define CR1_UE_Set                ((uint16_t)0x2000)  /*!< UUSART Enable Mask */

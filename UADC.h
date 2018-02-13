@@ -9,8 +9,8 @@
 #define UADC_H_
 
 #include <cmsis_device.h>
-#include <UMisc.h>
-#include <Tool/UEventPool.h>
+#include <Misc/UMisc.h>
+#include <Event/UEventPool.h>
 
 class UADC {
 public:
