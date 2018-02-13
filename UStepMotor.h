@@ -115,7 +115,7 @@ private:
 	Dir_Typedef _CurDir; //当前方向
 
 	volatile Flow_Typedef _Flow;	//当前电机状态
-	volatile bool _StepLimit;	//是否由步数限制运动
+	volatile bool _StepLimitAction;	//是否由步数限制运动
 	volatile bool _Busy;	//当前电机繁忙?
 
 	void TIMInit();

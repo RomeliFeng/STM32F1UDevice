@@ -57,7 +57,7 @@ UStepMotor::UStepMotor(TIM_TypeDef* TIMx, uint8_t TIMx_CCR_Ch,
 	_CurDir = Dir_CW; //当前方向
 
 	_Flow = Flow_Stop;
-	_StepLimit = true;
+	_StepLimitAction = true;
 	_Busy = false;	//当前电机繁忙?
 }
 
@@ -163,10 +163,10 @@ Status_Typedef UStepMotor::Move(uint32_t step, Dir_Typedef dir) {
 	_CurStep = 0;
 	if (step != 0) {
 		//基于步数运动
-		_StepLimit = true;
+		_StepLimitAction = true;
 		_TgtStep = step;
 
-		if (_Decel != 0) {
+		if ((_Decel != 0) && (_TgtStep >= 1)) {
 			//当减速存在并且处于步数控制的运动流程中
 			//从最高速减速
 			uint32_t tmpStep = GetDecelStep(_MaxSpeed);
@@ -176,12 +176,12 @@ Status_Typedef UStepMotor::Move(uint32_t step, Dir_Typedef dir) {
 			_DecelStartStep = (
 					tmpStep >= tmpStep2 ? tmpStep2 : _TgtStep - tmpStep) - 1;
 		} else {
-			//减速度为0
+			//减速度为0 或者目标步数为1
 			_DecelStartStep = 0;
 		}
 	} else {
 		//持续运动，
-		_StepLimit = false;
+		_StepLimitAction = false;
 		_TgtStep = 0;
 		_DecelStartStep = 0;
 	}
@@ -234,7 +234,7 @@ void UStepMotor::StopSlow() {
 	//根据当前步数和从当前速度减速所需步数计算目标步数
 	_TgtStep = GetDecelStep(_MaxSpeed) + _CurStep;
 	//变更模式为步数限制
-	_StepLimit = true;
+	_StepLimitAction = true;
 	StartDec();
 }
 
@@ -271,18 +271,13 @@ void UStepMotor::IRQ() {
 
 	switch (_Flow) {
 	case Flow_Accel:
-		//_DecelStartStep = 0 时为持续运动模式
-		if (_DecelStartStep != 0) {
-			//当减速流程存在
+		if (_StepLimitAction) {
+			//步数限制运动模式
 			if (_CurStep >= _DecelStartStep) {
 				//到达减速步数，进入减速流程
 				StartDec();
 				_Flow = Flow_Decel;
 			}
-		} else if (_StepLimit && (_CurStep == _TgtStep)) {
-			//当减速流程不存在时，有可能在加速中进入停止流程
-			_Flow = Flow_Stop;
-			Stop();
 		}
 		if (_AccDecUnit->IsDone()) {
 			//到达最高步数，开始匀速流程
@@ -291,28 +286,24 @@ void UStepMotor::IRQ() {
 		SetSpeed(_AccDecUnit->GetCurSpeed());
 		break;
 	case Flow_Run:
-		if (_StepLimit && (_CurStep >= _DecelStartStep)) {
+		if (_StepLimitAction && (_CurStep >= _DecelStartStep)) {
 			//到达减速步数，进入减速流程
 			StartDec();
 			_Flow = Flow_Decel;
-		} else if (_StepLimit && (_CurStep == _TgtStep)) {
-			//当减速流程不存在时，有可能在运行中中进入停止流程
-			_Flow = Flow_Stop;
-			Stop();
 		}
 		break;
 	case Flow_Decel:
 		SetSpeed(_AccDecUnit->GetCurSpeed());
-		if (_CurStep == _TgtStep) {
-			//当减速流程时，有可能进入停止流程
-			_Flow = Flow_Stop;
-			Stop();
-		}
 		break;
 	default:
 		//Error @Romeli 不可能到达位置（内存溢出）
 		UDebugOut("Unkown error");
 		break;
+	}
+	if (_StepLimit && (_CurStep == _TgtStep)) {
+		//当处于步数运动并且到达指定步数时，停止
+		_Flow = Flow_Stop;
+		Stop();
 	}
 	TIM_Clear_Update_Flag(_TIMx);
 }
@@ -442,14 +433,13 @@ void UStepMotor::TIMInit() {
  */
 void UStepMotor::ITInit() {
 	NVIC_InitTypeDef NVIC_InitStructure;
-	 //设置中断
+	//设置中断
 
 	NVIC_InitStructure.NVIC_IRQChannel = _IT.NVIC_IRQChannel;
-	 NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-	 NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
 			_IT.PreemptionPriority;
-	 NVIC_InitStructure.NVIC_IRQChannelSubPriority =
-			 _IT.SubPriority;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = _IT.SubPriority;
 	NVIC_Init(&NVIC_InitStructure);
 }
 
