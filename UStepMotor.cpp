@@ -300,7 +300,7 @@ void UStepMotor::IRQ() {
 		UDebugOut("Unkown error");
 		break;
 	}
-	if (_StepLimit && (_CurStep == _TgtStep)) {
+	if (_StepLimitAction && (_CurStep == _TgtStep)) {
 		//当处于步数运动并且到达指定步数时，停止
 		_Flow = Flow_Stop;
 		Stop();
