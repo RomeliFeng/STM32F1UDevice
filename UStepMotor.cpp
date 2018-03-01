@@ -51,8 +51,8 @@ UStepMotor::UStepMotor(TIM_TypeDef* TIMx, uint8_t TIMx_CCR_Ch,
 	_Decel = 20000;	//减速度
 	_MaxSpeed = 10000;	//最大速度
 
-	_CWLimit = 0; //正转保护限位
-	_CCWLimit = 0; //反转保护限位
+	_Limit_CW = 0; //正转保护限位
+	_Limit_CCW = 0; //反转保护限位
 
 	_RelativeDir = Dir_CW; //实际方向对应
 	_CurDir = Dir_CW; //当前方向
@@ -75,6 +75,7 @@ void UStepMotor::Init() {
 	TIMInit();
 	ITInit();
 	_TIMy_FRQ = SystemCoreClock / (_TIMx->PSC + 1);
+	Lock();
 }
 
 /*
@@ -142,16 +143,72 @@ void UStepMotor::SetRelativeDir(Dir_Typedef dir) {
 
 /*
  * author Romeli
+ * explain 设置步进电机保护限位（正转）
+ * param cwLimit
+ * return void
+ */
+void UStepMotor::SetLimit_CW(uint8_t limit_CW) {
+	_Limit_CW = limit_CW;
+}
+
+/*
+ * author Romeli
+ * explain 设置步进电机保护限位（反转）
+ * param cwLimit
+ * return void
+ */
+void UStepMotor::SetLimit_CCW(uint8_t limit_CCW) {
+	_Limit_CCW = limit_CCW;
+}
+
+/*
+ * author Romeli
+ * explain 设置步进电机保护限位
+ * param cwLimit 正转限位
+ * param ccwLimit 反转限位
+ * return void
+ */
+void UStepMotor::SetLimit(uint8_t limit_CW, uint8_t limit_CCW) {
+	SetLimit_CW(limit_CW);
+	SetLimit_CCW(limit_CCW);
+}
+
+/*
+ * author Romeli
+ * explain 设置步进电机保护限位
+ * param dir 方向
+ * param limit 限位
+ * return void
+ */
+void UStepMotor::SetLimit(Dir_Typedef dir, uint8_t limit) {
+	if (dir == Dir_CW) {
+		_Limit_CW = limit;
+	} else {
+		_Limit_CCW = limit;
+	}
+}
+
+/*
+ * author Romeli
  * explain 移动步进电机
- * param1 step 欲移动的步数（为0时不会主动停止）
+ * param1 step 欲运动的步数（为0时不会主动停止）
  * param2 dir 运动方向
  * return void
  */
 Status_Typedef UStepMotor::Move(uint32_t step, Dir_Typedef dir) {
 	//停止如果有的运动
 	Stop();
+	//设置方向
+	SetDir(dir);
+	//检测保护限位
+	if (SafetyProtect()) {
+		//限位保护触发
+		return Status_Error;
+	}
 	//锁定当前运动
 	_Busy = true;
+	//使能电机
+	Lock();
 	//获取可用的速度计算单元
 	_AccDecUnit = UStepMotorAccDecUnit::GetFreeUnit(this);
 	if (_AccDecUnit == 0) {
@@ -187,9 +244,6 @@ Status_Typedef UStepMotor::Move(uint32_t step, Dir_Typedef dir) {
 		_DecelStartStep = 0;
 	}
 
-	//设置方向
-	SetDir(dir);
-
 	//切换步进电机状态为加速
 	_Flow = Flow_Accel;
 	_AccDecUnit->SetMode(UStepMotorAccDecUnit::Mode_Accel);
@@ -209,6 +263,32 @@ Status_Typedef UStepMotor::Move(uint32_t step, Dir_Typedef dir) {
 	TIM_Enable_IT_Update(_TIMx);
 	TIM_Enable(_TIMx);
 	return Status_Ok;
+}
+
+/*
+ * author Romeli
+ * explain 运动步进电机
+ * param step 欲移动的步数(+为正传，-为反转，0不转)
+ * return void
+ */
+Status_Typedef UStepMotor::Move(int32_t step) {
+	if (step > 0) {
+		return Move(step, Dir_CW);
+	} else if (step < 0) {
+		return Move(-step, Dir_CCW);
+	} else {
+		return Status_Ok;
+	}
+}
+
+/*
+ * author Romeli
+ * explain 持续运动步进电机
+ * param dir 电机转动方向
+ * return void
+ */
+Status_Typedef UStepMotor::Run(Dir_Typedef dir) {
+	return Move(0, dir);
 }
 
 /*
@@ -241,24 +321,46 @@ void UStepMotor::StopSlow() {
 
 /*
  * author Romeli
- * explain	检测是否可以安全移动（需要在派生类中重写）
- * return bool 是否安全可移动
+ * explain 锁定步进电机（使能）
+ * return void
  */
-void UStepMotor::SafetyProtect(uint32_t limit) {
+void UStepMotor::Lock() {
+	SetEnPin(ENABLE);
+}
+
+/*
+ * author Romeli
+ * explain 解锁步进电机（禁用）
+ * return void
+ */
+void UStepMotor::Unlock() {
+	SetEnPin(DISABLE);
+}
+
+/*
+ * author Romeli
+ * explain	检测是否可以安全移动（需要在派生类中重写）
+ * return bool 限位保护是否触发
+ */
+bool UStepMotor::SafetyProtect() {
+	bool status = false;
 	switch (_CurDir) {
 	case Dir_CW:
-		if ((limit & _CWLimit) != 0) {
+		if (GetLimit_CW()) {
+			status = true;
 			Stop();
 		}
 		break;
 	case Dir_CCW:
-		if ((limit & _CCWLimit) != 0) {
+		if (GetLimit_CCW()) {
+			status = true;
 			Stop();
 		}
 		break;
 	default:
 		break;
 	}
+	return status;
 }
 
 /*
@@ -358,6 +460,26 @@ void UStepMotor::SetEnPin(FunctionalState newState) {
 	} else {
 
 	}
+}
+
+/*
+ * author Romeli
+ * explain 获取正转限位传感器状态（建议在派生类中重写）
+ * return uint32_t
+ */
+bool UStepMotor::GetLimit_CW() {
+	//ToDo 不应该这么写，应删除限位传感器uint32_t 改为传感器位号？？？细化为检测正传传感器 和 反转传感器触发信号
+	return false;
+}
+
+/*
+ * author Romeli
+ * explain 获取反转限位传感器状态（建议在派生类中重写）
+ * return uint32_t
+ */
+bool UStepMotor::GetLimit_CCW() {
+	//ToDo 不应该这么写，应删除限位传感器uint32_t 改为传感器位号？？？细化为检测正传传感器 和 反转传感器触发信号
+	return false;
 }
 
 /*
