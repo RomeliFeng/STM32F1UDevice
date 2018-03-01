@@ -20,14 +20,13 @@ UUSART::UUSART(uint16_t rxBufSize, uint16_t txBufSize, USART_TypeDef* USARTx,
 	_DMA_IT_TC_TX = 0;
 	_DMAy_Channelx_Rx = 0;
 	_DMAy_Channelx_Tx = 0;
-	
+
 	_EPool = nullptr;
 	ReceiveEvent = nullptr;
-	_mode = Mode_Interrupt;
+	_Mode = Mode_Interrupt;
 }
 
-UUSART::UUSART(uint16_t rxBufSize,
-		uint16_t txBufSize, USART_TypeDef* USARTx,
+UUSART::UUSART(uint16_t rxBufSize, uint16_t txBufSize, USART_TypeDef* USARTx,
 		UIT_Typedef itUSARTx, DMA_TypeDef* DMAx,
 		DMA_Channel_TypeDef* DMAy_Channelx_Rx,
 		DMA_Channel_TypeDef* DMAy_Channelx_Tx, UIT_Typedef itDMAxRx,
@@ -55,12 +54,12 @@ UUSART::UUSART(uint16_t rxBufSize,
 	_DMATxBuf.end = 0;
 	_DMATxBuf.busy = false;
 
-	_mode = Mode_DMA;
+	_Mode = Mode_DMA;
 }
 
 UUSART::~UUSART() {
-	delete _DMARxBuf.data;
-	delete _DMATxBuf.data;
+	delete[] _DMARxBuf.data;
+	delete[] _DMATxBuf.data;
 }
 
 /*
@@ -83,12 +82,12 @@ void UUSART::Init(uint32_t baud, uint16_t USART_Parity,
 	}
 	//USART外设初始化
 	USARTInit(baud, USART_Parity);
-	if (_mode == Mode_DMA) {
+	if (_Mode == Mode_DMA) {
 		//DMA初始化
 		DMAInit();
 	}
 	//中断初始化
-	ITInit(_mode);
+	ITInit(_Mode);
 	//使能USART(使用库函数兼容性好)
 	USART_Cmd(_USARTx, ENABLE);
 }
@@ -101,14 +100,13 @@ void UUSART::Init(uint32_t baud, uint16_t USART_Parity,
  * return Status_Typedef
  */
 Status_Typedef UUSART::Write(uint8_t* data, uint16_t len) {
-	if (_mode == Mode_DMA) {
+	if (_Mode == Mode_DMA) {
 		while (len != 0) {
 			if ((_DMAy_Channelx_Tx->CMAR != (uint32_t) _TxBuf.data)
 					&& (_TxBuf.size - _TxBuf.end != 0)) {
 				//若缓冲区1空闲，并且有空闲空间
 				DMASend(data, len, _TxBuf);
-			} else if ((_DMAy_Channelx_Tx->CMAR
-					!= (uint32_t) _DMATxBuf.data)
+			} else if ((_DMAy_Channelx_Tx->CMAR != (uint32_t) _DMATxBuf.data)
 					&& (_DMATxBuf.size - _DMATxBuf.end != 0)) {
 				//若缓冲区2空闲，并且有空闲空间
 				DMASend(data, len, _DMATxBuf);
@@ -166,12 +164,11 @@ Status_Typedef UUSART::IRQUSART() {
 	if ((staus & USART_FLAG_IDLE) != RESET) {
 		//帧接收标志被触发
 		_newFrame = true;
-		if (_mode) {
+		if (_Mode == Mode_DMA) {
 			//关闭DMA接收
 			_DMAy_Channelx_Rx->CCR &= (uint16_t) (~DMA_CCR1_EN);
 
-			uint16_t len = uint16_t(
-					_RxBuf.size - _DMAy_Channelx_Rx->CNDTR);
+			uint16_t len = uint16_t(_RxBuf.size - _DMAy_Channelx_Rx->CNDTR);
 			//清除DMA标志
 //			_DMAx->IFCR = DMA1_FLAG_GL3 | DMA1_FLAG_TC3 | DMA1_FLAG_TE3
 //					| DMA1_FLAG_HT3;
@@ -420,13 +417,13 @@ void UUSART::DMAInit() {
 
 	_DMARxBuf.size = _RxBuf.size;
 	if (_DMARxBuf.data != 0) {
-		delete _DMARxBuf.data;
+		delete[] _DMARxBuf.data;
 	}
 	_DMARxBuf.data = new uint8_t[_DMARxBuf.size];
 
 	_DMATxBuf.size = _TxBuf.size;
 	if (_DMATxBuf.data != 0) {
-		delete _DMATxBuf.data;
+		delete[] _DMATxBuf.data;
 	}
 	_DMATxBuf.data = new uint8_t[_DMATxBuf.size];
 
@@ -515,4 +512,13 @@ Status_Typedef UUSART::DMASend(uint8_t *&data, uint16_t &len,
 		txBuf.busy = false;
 	}
 	return Status_Ok;
+}
+
+bool UUSART::IsBusy() {
+	if (_Mode == Mode_DMA) {
+		return _DMATxBusy;
+	} else {
+		//暂时没有中断自动重发的预定
+		return true;
+	}
 }

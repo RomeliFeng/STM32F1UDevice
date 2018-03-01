@@ -48,6 +48,8 @@ public:
 
 	void SetEventPool(voidFun rcvEvent, UEventPool &pool);
 
+	bool IsBusy() override;
+
 	Status_Typedef IRQUSART();
 	Status_Typedef IRQDMATx();
 protected:
@@ -75,7 +77,7 @@ private:
 	UIT_Typedef _ITDMAxRx;
 	UIT_Typedef _ITDMAxTx;
 
-	Mode_Typedef _mode;
+	Mode_Typedef _Mode;
 
 	void CalcDMATC();
 
