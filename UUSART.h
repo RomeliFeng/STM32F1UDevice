@@ -48,7 +48,7 @@ public:
 
 	void SetEventPool(voidFun rcvEvent, UEventPool &pool);
 
-	bool IsBusy() override;
+	virtual bool IsBusy();
 
 	Status_Typedef IRQUSART();
 	Status_Typedef IRQDMATx();
