@@ -8,11 +8,11 @@
 #ifndef UHC595BASE_H_
 #define UHC595BASE_H_
 
-#include "stm32f10x.h"
+#include <cmsis_device.h>
 
-class UHC595Class {
+class UHC595Base {
 public:
-	UHC595Class();
+	UHC595Base();
 	void Init();
 	void Write(uint8_t*& data, uint8_t& len);
 	void Disable();

@@ -8,15 +8,15 @@
 #include <Tool/UTick.h>
 #include <UHC595Base.h>
 
-UHC595Class::UHC595Class() {
+UHC595Base::UHC595Base() {
 }
 
-void UHC595Class::Init() {
+void UHC595Base::Init() {
 	GPIOInit();
 	Disable();
 }
 
-void UHC595Class::Write(uint8_t*& data, uint8_t& len) {
+void UHC595Base::Write(uint8_t*& data, uint8_t& len) {
 	WritePin_STCP(false);
 	UTick::Tick(1);
 	for (uint8_t i = 0; i < len; ++i) {
@@ -37,25 +37,25 @@ void UHC595Class::Write(uint8_t*& data, uint8_t& len) {
 	Enable();
 }
 
-inline void UHC595Class::Disable() {
+inline void UHC595Base::Disable() {
 	WritePin_OE(false);
 }
 
-inline void UHC595Class::Enable() {
+inline void UHC595Base::Enable() {
 	WritePin_OE(true);
 }
 
-void UHC595Class::GPIOInit() {
+void UHC595Base::GPIOInit() {
 }
 
-void UHC595Class::WritePin_DS(bool state) {
+void UHC595Base::WritePin_DS(bool state) {
 }
 
-void UHC595Class::WritePin_OE(bool state) {
+void UHC595Base::WritePin_OE(bool state) {
 }
 
-void UHC595Class::WritePin_STCP(bool state) {
+void UHC595Base::WritePin_STCP(bool state) {
 }
 
-void UHC595Class::WritePin_SHCP(bool state) {
+void UHC595Base::WritePin_SHCP(bool state) {
 }
