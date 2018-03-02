@@ -20,10 +20,10 @@ public:
 	void Disable();
 protected:
 	virtual void GPIOInit() = 0;
-	virtual void WritePin_PL(bool state) = 0;
-	virtual void WritePin_CE(bool state) = 0;
-	virtual void WritePin_CP(bool state) = 0;
-	virtual bool ReadPin_DS() = 0;
+	virtual inline void WritePin_PL(bool state) = 0;
+	virtual inline void WritePin_CE(bool state) = 0;
+	virtual inline void WritePin_CP(bool state) = 0;
+	virtual inline bool ReadPin_DS() = 0;
 };
 
 #endif /* UHC165BASE_H_ */

@@ -48,14 +48,14 @@ inline void UHC595Base::Enable() {
 void UHC595Base::GPIOInit() {
 }
 
-void UHC595Base::WritePin_DS(bool state) {
+inline void UHC595Base::WritePin_DS(bool state) {
 }
 
-void UHC595Base::WritePin_OE(bool state) {
+inline void UHC595Base::WritePin_OE(bool state) {
 }
 
-void UHC595Base::WritePin_STCP(bool state) {
+inline void UHC595Base::WritePin_STCP(bool state) {
 }
 
-void UHC595Base::WritePin_SHCP(bool state) {
+inline void UHC595Base::WritePin_SHCP(bool state) {
 }

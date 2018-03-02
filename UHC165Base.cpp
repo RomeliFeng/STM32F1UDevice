@@ -52,15 +52,15 @@ void UHC165Base::Read(uint8_t*& data, uint8_t& len) {
 void UHC165Base::GPIOInit() {
 }
 
-void UHC165Base::WritePin_PL(bool state) {
+inline void UHC165Base::WritePin_PL(bool state) {
 }
 
-void UHC165Base::WritePin_CE(bool state) {
+inline void UHC165Base::WritePin_CE(bool state) {
 }
 
-void UHC165Base::WritePin_CP(bool state) {
+inline void UHC165Base::WritePin_CP(bool state) {
 }
 
-bool UHC165Base::ReadPin_DS() {
+inline bool UHC165Base::ReadPin_DS() {
 	return true;
 }
