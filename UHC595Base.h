@@ -5,14 +5,14 @@
  *      Author: Romeli
  */
 
-#ifndef HC595BASE_H_
-#define HC595BASE_H_
+#ifndef UHC595BASE_H_
+#define UHC595BASE_H_
 
 #include "stm32f10x.h"
 
-class HC595Class {
+class UHC595Class {
 public:
-	HC595Class();
+	UHC595Class();
 	void Init();
 	void Write(uint8_t*& data, uint8_t& len);
 	void Disable();
@@ -25,4 +25,4 @@ protected:
 	virtual void WritePin_SHCP(bool state) = 0;
 };
 
-#endif /* HC595BASE_H_ */
+#endif /* UHC595BASE_H_ */

@@ -5,14 +5,14 @@
  *      Author: Romeli
  */
 
-#ifndef HC165BASE_H_
-#define HC165BASE_H_
+#ifndef UHC165BASE_H_
+#define UHC165BASE_H_
 
 #include <cmsis_device.h>
 
-class HC165Base {
+class UHC165Base {
 public:
-	HC165Base();
+	UHC165Base();
 	void Init();
 	void Read(uint8_t*& data, uint8_t& len);
 
@@ -26,4 +26,4 @@ protected:
 	virtual bool ReadPin_DS() = 0;
 };
 
-#endif /* HC165BASE_H_ */
+#endif /* UHC165BASE_H_ */

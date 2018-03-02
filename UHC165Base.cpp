@@ -5,25 +5,25 @@
  *      Author: Romeli
  */
 
-#include <HC165Base.h>
 #include <Tool/UTick.h>
+#include <UHC165Base.h>
 
-HC165Base::HC165Base() {
+UHC165Base::UHC165Base() {
 }
 
-void HC165Base::Init() {
+void UHC165Base::Init() {
 	GPIOInit();
 }
 
-inline void HC165Base::Enable() {
+inline void UHC165Base::Enable() {
 	WritePin_CE(false);
 }
 
-inline void HC165Base::Disable() {
+inline void UHC165Base::Disable() {
 	WritePin_CE(true);
 }
 
-void HC165Base::Read(uint8_t*& data, uint8_t& len) {
+void UHC165Base::Read(uint8_t*& data, uint8_t& len) {
 	//发送一个低电平脉冲载入电平
 	WritePin_PL(false);
 	UTick::Tick(4);
@@ -49,18 +49,18 @@ void HC165Base::Read(uint8_t*& data, uint8_t& len) {
 	WritePin_CE(true);
 }
 
-void HC165Base::GPIOInit() {
+void UHC165Base::GPIOInit() {
 }
 
-void HC165Base::WritePin_PL(bool state) {
+void UHC165Base::WritePin_PL(bool state) {
 }
 
-void HC165Base::WritePin_CE(bool state) {
+void UHC165Base::WritePin_CE(bool state) {
 }
 
-void HC165Base::WritePin_CP(bool state) {
+void UHC165Base::WritePin_CP(bool state) {
 }
 
-bool HC165Base::ReadPin_DS() {
+bool UHC165Base::ReadPin_DS() {
 	return true;
 }
