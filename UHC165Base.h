@@ -16,8 +16,6 @@ public:
 	void Init();
 	void Read(uint8_t* data, uint8_t& len);
 
-	void Enable();
-	void Disable();
 protected:
 	virtual void GPIOInit() = 0;
 	virtual inline void WritePin_PL(bool state) = 0;

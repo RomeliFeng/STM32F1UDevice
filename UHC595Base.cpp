@@ -31,7 +31,7 @@ void UHC595Base::Init() {
 void UHC595Base::Write(uint8_t* data, uint8_t& len) {
 	WritePin_STCP(false);
 	UTick::Tick(1);
-	for (uint8_t i = 0; i < len; ++i) {
+	for (int16_t i = len - 1; i >= 0; --i) {
 		for (uint8_t mask = 0x80; mask != 0; mask >>= 1) {
 			WritePin_SHCP(false);
 			UTick::Tick(1);
@@ -55,7 +55,8 @@ void UHC595Base::Write(uint8_t* data, uint8_t& len) {
  * return void
  */
 inline void UHC595Base::Enable() {
-	WritePin_OE(true);
+	//低电平使能
+	WritePin_OE(false);
 }
 
 /*
@@ -64,7 +65,8 @@ inline void UHC595Base::Enable() {
  * return void
  */
 inline void UHC595Base::Disable() {
-	WritePin_OE(false);
+	//高电平禁用
+	WritePin_OE(true);
 }
 
 /*

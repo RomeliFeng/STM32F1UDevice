@@ -36,7 +36,7 @@ void UHC165Base::Read(uint8_t* data, uint8_t& len) {
 	WritePin_CP(false);
 	WritePin_CE(false);
 	UTick::Tick(1);
-	for (uint8_t i = 0; i < len; ++i) {
+	for (int16_t i = len - 1; i >= 0; --i) {
 		for (uint8_t mask = 0x80; mask != 0; mask = mask >> 1) {
 			if (ReadPin_DS()) {
 				data[i] |= mask;
@@ -50,24 +50,6 @@ void UHC165Base::Read(uint8_t* data, uint8_t& len) {
 			WritePin_CP(false);
 		}
 	}
-	WritePin_CE(true);
-}
-
-/*
- * author Romeli
- * explain 使能输入
- * return void
- */
-inline void UHC165Base::Enable() {
-	WritePin_CE(false);
-}
-
-/*
- * author Romeli
- * explain 禁用输入
- * return void
- */
-inline void UHC165Base::Disable() {
 	WritePin_CE(true);
 }
 
