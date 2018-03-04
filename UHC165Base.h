@@ -14,7 +14,7 @@ class UHC165Base {
 public:
 	UHC165Base();
 	void Init();
-	void Read(uint8_t*& data, uint8_t& len);
+	void Read(uint8_t* data, uint8_t& len);
 
 	void Enable();
 	void Disable();

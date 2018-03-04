@@ -11,12 +11,24 @@
 UHC595Base::UHC595Base() {
 }
 
+/*
+ * author Romeli
+ * explain 初始化74HC595接口
+ * return void
+ */
 void UHC595Base::Init() {
 	GPIOInit();
 	Disable();
 }
 
-void UHC595Base::Write(uint8_t*& data, uint8_t& len) {
+/*
+ * author Romeli
+ * explain 向74HC595接口写入并行数据，长度为字节
+ * param data 欲写入的数据
+ * param len 欲写入数据长度
+ * return void
+ */
+void UHC595Base::Write(uint8_t* data, uint8_t& len) {
 	WritePin_STCP(false);
 	UTick::Tick(1);
 	for (uint8_t i = 0; i < len; ++i) {
@@ -37,25 +49,60 @@ void UHC595Base::Write(uint8_t*& data, uint8_t& len) {
 	Enable();
 }
 
-inline void UHC595Base::Disable() {
-	WritePin_OE(false);
-}
-
+/*
+ * author Romeli
+ * explain 使能输出
+ * return void
+ */
 inline void UHC595Base::Enable() {
 	WritePin_OE(true);
 }
 
+/*
+ * author Romeli
+ * explain 禁用输出
+ * return void
+ */
+inline void UHC595Base::Disable() {
+	WritePin_OE(false);
+}
+
+/*
+ * author Romeli
+ * explain 初始化使用到的GPIO（须在派生类中实现）
+ * return void
+ */
 void UHC595Base::GPIOInit() {
 }
 
+/*
+ * author Romeli
+ * explain 控制DS引脚（须在派生类中实现，需要内联）
+ * return void
+ */
 inline void UHC595Base::WritePin_DS(bool state) {
 }
 
+/*
+ * author Romeli
+ * explain 控制OE引脚（须在派生类中实现，需要内联）
+ * return void
+ */
 inline void UHC595Base::WritePin_OE(bool state) {
 }
 
+/*
+ * author Romeli
+ * explain 控制STCP引脚（须在派生类中实现，需要内联）
+ * return void
+ */
 inline void UHC595Base::WritePin_STCP(bool state) {
 }
 
+/*
+ * author Romeli
+ * explain 控制SHCP引脚（须在派生类中实现，需要内联）
+ * return void
+ */
 inline void UHC595Base::WritePin_SHCP(bool state) {
 }

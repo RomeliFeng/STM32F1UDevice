@@ -14,9 +14,10 @@ class UHC595Base {
 public:
 	UHC595Base();
 	void Init();
-	void Write(uint8_t*& data, uint8_t& len);
-	void Disable();
+	void Write(uint8_t* data, uint8_t& len);
+
 	void Enable();
+	void Disable();
 protected:
 	virtual void GPIOInit() = 0;
 	virtual inline void WritePin_DS(bool state) = 0;

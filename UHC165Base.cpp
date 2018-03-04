@@ -11,19 +11,23 @@
 UHC165Base::UHC165Base() {
 }
 
+/*
+ * author Romeli
+ * explain 初始化74HC165接口
+ * return void
+ */
 void UHC165Base::Init() {
 	GPIOInit();
 }
 
-inline void UHC165Base::Enable() {
-	WritePin_CE(false);
-}
-
-inline void UHC165Base::Disable() {
-	WritePin_CE(true);
-}
-
-void UHC165Base::Read(uint8_t*& data, uint8_t& len) {
+/*
+ * author Romeli
+ * explain 从74HC165接口读取并行数据，长度为字节
+ * param data 读取回来的数据
+ * param len 欲读取数据长度
+ * return void
+ */
+void UHC165Base::Read(uint8_t* data, uint8_t& len) {
 	//发送一个低电平脉冲载入电平
 	WritePin_PL(false);
 	UTick::Tick(4);
@@ -49,18 +53,61 @@ void UHC165Base::Read(uint8_t*& data, uint8_t& len) {
 	WritePin_CE(true);
 }
 
+/*
+ * author Romeli
+ * explain 使能输入
+ * return void
+ */
+inline void UHC165Base::Enable() {
+	WritePin_CE(false);
+}
+
+/*
+ * author Romeli
+ * explain 禁用输入
+ * return void
+ */
+inline void UHC165Base::Disable() {
+	WritePin_CE(true);
+}
+
+/*
+ * author Romeli
+ * explain 初始化使用到的GPIO（须在派生类中实现）
+ * return void
+ */
 void UHC165Base::GPIOInit() {
 }
 
+/*
+ * author Romeli
+ * explain 控制PL引脚（须在派生类中实现，需要内联）
+ * return void
+ */
 inline void UHC165Base::WritePin_PL(bool state) {
 }
 
+/*
+ * author Romeli
+ * explain 控制CE引脚（须在派生类中实现，需要内联）
+ * return void
+ */
 inline void UHC165Base::WritePin_CE(bool state) {
 }
 
+/*
+ * author Romeli
+ * explain 控制CP引脚（须在派生类中实现，需要内联）
+ * return void
+ */
 inline void UHC165Base::WritePin_CP(bool state) {
 }
 
+/*
+ * author Romeli
+ * explain 读取引脚（须在派生类中实现，需要内联）
+ * return void
+ */
 inline bool UHC165Base::ReadPin_DS() {
 	return true;
 }
