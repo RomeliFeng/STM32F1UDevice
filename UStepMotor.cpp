@@ -191,11 +191,12 @@ void UStepMotor::SetLimit(Dir_Typedef dir, uint8_t limit) {
 /*
  * author Romeli
  * explain 移动步进电机
- * param1 step 欲运动的步数（为0时不会主动停止）
- * param2 dir 运动方向
+ * param step 欲运动的步数（为0时不会主动停止）
+ * param dir 运动方向
+ * param sync 是否等待运动结束
  * return void
  */
-Status_Typedef UStepMotor::Move(uint32_t step, Dir_Typedef dir) {
+Status_Typedef UStepMotor::Move(uint32_t step, Dir_Typedef dir, bool sync) {
 	//停止如果有的运动
 	Stop();
 	//设置方向
@@ -262,6 +263,11 @@ Status_Typedef UStepMotor::Move(uint32_t step, Dir_Typedef dir) {
 	TIM_Clear_Update_Flag(_TIMx);
 	TIM_Enable_IT_Update(_TIMx);
 	TIM_Enable(_TIMx);
+
+	if (sync) {
+		while (_Busy)
+			;
+	}
 	return Status_Ok;
 }
 
@@ -269,13 +275,14 @@ Status_Typedef UStepMotor::Move(uint32_t step, Dir_Typedef dir) {
  * author Romeli
  * explain 运动步进电机
  * param step 欲移动的步数(+为正传，-为反转，0不转)
+ * param sync 是否等待运动结束
  * return void
  */
-Status_Typedef UStepMotor::Move(int32_t step) {
+Status_Typedef UStepMotor::Move(int32_t step, bool sync) {
 	if (step > 0) {
-		return Move(step, Dir_CW);
+		return Move(step, Dir_CW, sync);
 	} else if (step < 0) {
-		return Move(-step, Dir_CCW);
+		return Move(-step, Dir_CCW, sync);
 	} else {
 		return Status_Ok;
 	}

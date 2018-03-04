@@ -56,8 +56,8 @@ public:
 		return _TgtStep;
 	}
 	//根据步数进行移动
-	Status_Typedef Move(uint32_t step, Dir_Typedef dir);
-	Status_Typedef Move(int32_t step);
+	Status_Typedef Move(uint32_t step, Dir_Typedef dir, bool sync = false);
+	Status_Typedef Move(int32_t step, bool sync = false);
 	//持续移动
 	Status_Typedef Run(Dir_Typedef dir);
 	//停止移动
