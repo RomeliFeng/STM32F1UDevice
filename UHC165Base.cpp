@@ -40,12 +40,13 @@ void UHC165Base::Read(uint8_t* data, uint8_t& len) {
 		for (uint8_t mask = 0x80; mask != 0; mask = mask >> 1) {
 			if (ReadPin_DS()) {
 				data[i] |= mask;
-			} else {
 				UTick::Tick(1);
+			} else {
+				data[i] &= (~mask);
 			}
 			//在上升沿装载新的数据
 			WritePin_CP(true);
-			UTick::Tick(1);
+			UTick::Tick(3);
 			//回到低电平，为了下次位移
 			WritePin_CP(false);
 		}
