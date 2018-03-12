@@ -46,6 +46,7 @@ UStepMotor::UStepMotor(TIM_TypeDef* TIMx, uint8_t TIMx_CCR_Ch,
 	_CurStep = 0;	//当前已移动步数
 	_TgtStep = 0;	//目标步数
 	_DecelStartStep = 0;	//减速开始步数
+	_StepEncoder = 0;
 
 	_Accel = 20000;	//加速度
 	_Decel = 20000;	//减速度
@@ -311,6 +312,17 @@ void UStepMotor::Stop() {
 	UStepMotorAccDecUnit::Free(this);
 	//清空忙标志
 	_Busy = false;
+	switch (_CurDir) {
+	case Dir_CW:
+		_StepEncoder += _CurStep;
+		break;
+	case Dir_CCW:
+		_StepEncoder -= _CurStep;
+		break;
+	default:
+		break;
+	}
+	_CurStep = 0;
 }
 
 /*

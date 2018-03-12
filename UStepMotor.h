@@ -55,6 +55,11 @@ public:
 	inline uint32_t GetTgtStep() {
 		return _TgtStep;
 	}
+	inline int32_t GetPos(){
+		return _StepEncoder;
+	}
+
+
 	//根据步数进行移动
 	Status_Typedef Move(uint32_t step, Dir_Typedef dir, bool sync = false);
 	Status_Typedef Move(int32_t step, bool sync = false);
@@ -97,6 +102,7 @@ private:
 	volatile uint32_t _CurStep;	//当前已移动步数
 	volatile uint32_t _TgtStep;	//目标步数
 	uint32_t _DecelStartStep;	//减速开始步数
+	int32_t _StepEncoder;
 
 	uint32_t _Accel;	//加速度
 	uint32_t _Decel;	//减速度
