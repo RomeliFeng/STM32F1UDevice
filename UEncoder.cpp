@@ -73,6 +73,9 @@ void UEncoder::SetRelativeDir(Dir_Typedef dir) {
  * return void
  */
 void UEncoder::SetPos(int32_t pos) {
+	if (_RelativeDir == Dir_Negtive) {
+		pos = -pos;
+	}
 	if (pos >= 0) {
 		_ExCNT = uint16_t(pos / 0x10000);
 		_TIMx->CNT = uint16_t(pos - (_ExCNT * 0x10000));
@@ -161,8 +164,7 @@ void UEncoder::ITInit() {
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
 			_IT.PreemptionPriority;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority =
-			_IT.SubPriority;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = _IT.SubPriority;
 	NVIC_Init(&NVIC_InitStructure);
 
 	TIM_ClearITPendingBit(_TIMx, TIM_IT_Update);
