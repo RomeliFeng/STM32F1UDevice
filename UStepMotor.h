@@ -55,10 +55,12 @@ public:
 	inline uint32_t GetTgtStep() {
 		return _TgtStep;
 	}
-	inline int32_t GetPos(){
+	inline int32_t GetPos() {
 		return _StepEncoder;
 	}
-
+	inline void SetPos(int32_t pos) {
+		_StepEncoder = pos;
+	}
 
 	//根据步数进行移动
 	Status_Typedef Move(uint32_t step, Dir_Typedef dir, bool sync = false);
