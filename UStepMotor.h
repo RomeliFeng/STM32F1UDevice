@@ -8,9 +8,8 @@
 #ifndef USTEPMOTOR_H_
 #define USTEPMOTOR_H_
 
+#include <cmsis_device.h>
 #include <Misc/UMisc.h>
-#include <stm32f10x.h>
-#include <sys/_stdint.h>
 
 #define STEP_MOTOR_MIN_SPEED 200
 
