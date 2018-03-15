@@ -389,7 +389,12 @@ bool UStepMotor::SafetyProtect() {
  */
 void UStepMotor::IRQ() {
 	_CurStep++;
+
 	//处于步数限制运动中 并且 到达指定步数，停止运动
+	if (_StepLimitAction && (_CurStep == _TgtStep)) {
+		//当处于步数运动并且到达指定步数时，停止
+		_Flow = Flow_Stop;
+	}
 
 	switch (_Flow) {
 	case Flow_Accel:
@@ -417,15 +422,13 @@ void UStepMotor::IRQ() {
 	case Flow_Decel:
 		SetSpeed(_AccDecUnit->GetCurSpeed());
 		break;
+	case Flow_Stop:
+		Stop();
+		break;
 	default:
 		//Error @Romeli 不可能到达位置（内存溢出）
 		UDebugOut("Unkown error");
 		break;
-	}
-	if (_StepLimitAction && (_CurStep == _TgtStep)) {
-		//当处于步数运动并且到达指定步数时，停止
-		_Flow = Flow_Stop;
-		Stop();
 	}
 	TIM_Clear_Update_Flag(_TIMx);
 }
