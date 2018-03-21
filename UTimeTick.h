@@ -15,7 +15,7 @@ class UTimeTick: public UEventLoop {
 public:
 	UTimeTick(TIM_TypeDef* TIMx, UIT_Typedef& it);
 	void Init(uint16_t ms);
-	void ISR();
+	void IRQ();
 protected:
 	TIM_TypeDef* _TIMx;	//响应时间计算用定时器
 	UIT_Typedef _IT; //中断优先级

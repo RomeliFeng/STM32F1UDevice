@@ -23,7 +23,8 @@ void UTimeTick::TIMInit(uint16_t ms) {
 	TIMRCCInit();
 	TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;
 	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
-	TIM_TimeBaseStructure.TIM_Prescaler = (SystemCoreClock >> 1) / 1000 - 1;
+	TIM_TimeBaseStructure.TIM_Prescaler = uint16_t(
+			(SystemCoreClock >> 1) / 1000 - 1);
 	TIM_TimeBaseStructure.TIM_Period = ms << 1;
 	TIM_TimeBaseStructure.TIM_RepetitionCounter = 0;
 	TIM_TimeBaseInit(_TIMx, &TIM_TimeBaseStructure);
@@ -43,9 +44,8 @@ void UTimeTick::NVICInit() {
 
 	TIM_Cmd(_TIMx, ENABLE);
 }
-#include "stdio.h"
 
-void UTimeTick::ISR() {
+void UTimeTick::IRQ() {
 	if ((_TIMx->SR & TIM_IT_Update) != 0) {
 		TryDo();
 		_TIMx->SR = (uint16_t) ~TIM_IT_Update;
