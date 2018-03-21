@@ -126,7 +126,7 @@ uint8_t UStepMotor::GetTheLowestPreemptionPriority() {
  */
 void UStepMotor::SetSpeed(uint16_t maxSpeed, uint32_t accel) {
 	maxSpeed = maxSpeed < 150 ? uint16_t(150) : maxSpeed;
-	accel = accel < 1500 ? 1500 : accel;
+	accel = accel < 1500 ? 0 : accel;
 	_MaxSpeed = maxSpeed;
 	_Accel = accel;
 	_Decel = accel;
@@ -203,7 +203,7 @@ Status_Typedef UStepMotor::Move(uint32_t step, Dir_Typedef dir, bool sync) {
 	//设置方向
 	SetDir(dir);
 	//检测保护限位
-	if (SafetyProtect()) {
+	if (!SafetyProtect()) {
 		//限位保护触发
 		return Status_Error;
 	}
@@ -246,18 +246,18 @@ Status_Typedef UStepMotor::Move(uint32_t step, Dir_Typedef dir, bool sync) {
 		_DecelStartStep = 0;
 	}
 
-	//切换步进电机状态为加速
-	_Flow = Flow_Accel;
-	_AccDecUnit->SetMode(UStepMotorAccDecUnit::Mode_Accel);
-
 	if (_Accel != 0) {
+		//切换步进电机状态为加速
+		_Flow = Flow_Accel;
+		_AccDecUnit->SetMode(UStepMotorAccDecUnit::Mode_Accel);
 		//开始加速 目标速度为最大速度
 		_AccDecUnit->Start(UStepMotorAccDecUnit::Mode_Accel);
+		//Warnning 需确保当前流程为加速
+		SetSpeed(_AccDecUnit->GetCurSpeed());
 	} else {
-		_AccDecUnit->SetCurSpeed(_MaxSpeed);
+		_Flow = Flow_Run;
+		SetSpeed(_MaxSpeed);
 	}
-	//Warnning 需确保当前流程为加速
-	SetSpeed(_AccDecUnit->GetCurSpeed());
 
 	TIM_PSC_Reload(_TIMx);
 	//开始输出脉冲
@@ -359,25 +359,27 @@ void UStepMotor::Unlock() {
 /*
  * author Romeli
  * explain	检测是否可以安全移动（需要在派生类中重写）
- * return bool 限位保护是否触发
+ * return bool 是否安全可移动
  */
 bool UStepMotor::SafetyProtect() {
-	bool status = false;
-	switch (_CurDir) {
-	case Dir_CW:
-		if (GetLimit_CW()) {
-			status = true;
-			Stop();
+	bool status = true;
+	if (_Busy) {
+		switch (_CurDir) {
+		case Dir_CW:
+			if (GetLimit_CW()) {
+				status = false;
+				Stop();
+			}
+			break;
+		case Dir_CCW:
+			if (GetLimit_CCW()) {
+				status = false;
+				Stop();
+			}
+			break;
+		default:
+			break;
 		}
-		break;
-	case Dir_CCW:
-		if (GetLimit_CCW()) {
-			status = true;
-			Stop();
-		}
-		break;
-	default:
-		break;
 	}
 	return status;
 }
@@ -413,10 +415,12 @@ void UStepMotor::IRQ() {
 		SetSpeed(_AccDecUnit->GetCurSpeed());
 		break;
 	case Flow_Run:
-		if (_StepLimitAction && (_CurStep >= _DecelStartStep)) {
-			//到达减速步数，进入减速流程
-			StartDec();
-			_Flow = Flow_Decel;
+		if (_Decel != 0) {
+			if (_StepLimitAction && (_CurStep >= _DecelStartStep)) {
+				//到达减速步数，进入减速流程
+				StartDec();
+				_Flow = Flow_Decel;
+			}
 		}
 		break;
 	case Flow_Decel:
