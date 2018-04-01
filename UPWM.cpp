@@ -11,10 +11,12 @@
 UPWM* UPWM::_Pool[4];
 uint8_t UPWM::_PoolSp = 0;
 
-UPWM::UPWM(TIM_TypeDef* TIMx, uint8_t OutputCh, uint16_t prescaler) {
+UPWM::UPWM(TIM_TypeDef* TIMx, uint8_t OutputCh, uint16_t prescaler,
+		bool inverting) {
 	_TIMx = TIMx;
 	_OutputCh = OutputCh;
 	_Prescaler = prescaler;
+	_Inverting = inverting;
 
 	//自动将对象指针加入资源池
 	_Pool[_PoolSp++] = this;
@@ -131,7 +133,11 @@ void UPWM::TIMInit(uint16_t period, uint16_t pulse) {
 	TIM_OCStructInit(&TIM_OCInitStructure);
 	TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
 	TIM_OCInitStructure.TIM_Pulse = pulse;
-	TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
+	if (!_Inverting) {
+		TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
+	} else {
+		TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_Low;
+	}
 	TIM_OCInitStructure.TIM_OCIdleState = TIM_OCIdleState_Reset;
 	TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
 

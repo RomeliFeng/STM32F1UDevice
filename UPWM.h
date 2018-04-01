@@ -23,7 +23,8 @@ public:
 		OutputCh_All = 0x0f
 	};
 
-	UPWM(TIM_TypeDef* TIMx, uint8_t outputCh, uint16_t prescaler = 0);
+	UPWM(TIM_TypeDef* TIMx, uint8_t outputCh, uint16_t prescaler = 0,
+			bool inverting = false);
 	virtual ~UPWM();
 
 	//初始化硬件
@@ -44,6 +45,7 @@ private:
 	TIM_TypeDef* _TIMx;
 	uint8_t _OutputCh;
 	uint16_t _Prescaler;
+	bool _Inverting;
 };
 
 #endif /* UPWM_H_ */
