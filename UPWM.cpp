@@ -11,9 +11,10 @@
 UPWM* UPWM::_Pool[4];
 uint8_t UPWM::_PoolSp = 0;
 
-UPWM::UPWM(TIM_TypeDef* TIMx, uint8_t OutputCh) {
+UPWM::UPWM(TIM_TypeDef* TIMx, uint8_t OutputCh, uint16_t prescaler) {
 	_TIMx = TIMx;
 	_OutputCh = OutputCh;
+	_Prescaler = prescaler;
 
 	//自动将对象指针加入资源池
 	_Pool[_PoolSp++] = this;
@@ -122,7 +123,7 @@ void UPWM::TIMInit(uint16_t period, uint16_t pulse) {
 	TIM_TimeBaseStructInit(&TIM_TimeBaseInitStructure);
 	TIM_TimeBaseInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
 	TIM_TimeBaseInitStructure.TIM_CounterMode = TIM_CounterMode_Up;
-	TIM_TimeBaseInitStructure.TIM_Prescaler = 0;
+	TIM_TimeBaseInitStructure.TIM_Prescaler = _Prescaler;
 	TIM_TimeBaseInitStructure.TIM_Period = period;
 	TIM_TimeBaseInitStructure.TIM_RepetitionCounter = 0;
 	TIM_TimeBaseInit(_TIMx, &TIM_TimeBaseInitStructure);
