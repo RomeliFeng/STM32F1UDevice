@@ -8,11 +8,12 @@
 #include <UCAN.h>
 #include <cstring>
 
-UCAN::UCAN(UIT_Typedef& it, uint8_t rxBufSize, uint16_t idH, uint16_t idL,
-		uint16_t maskIdH, uint16_t maskIdL) :
+UCAN::UCAN(uint8_t rxBufSize, uint16_t idH, uint16_t idL, uint16_t maskIdH,
+		uint16_t maskIdL, CAN_TypeDef* CANx, UIT_Typedef& it) :
 		_it(it) {
 	ReceiveEvent = nullptr;
 
+	_CANx = CANx;
 	_idH = idH;
 	_idL = idL;
 	_maskIdH = maskIdH;
@@ -46,7 +47,7 @@ void UCAN::Send(uint32_t id, uint8_t* data, uint8_t size) {
 	memcpy(msg.Data, data, msg.DLC);
 	msg.IDE = 0;
 	msg.RTR = 0;
-	CAN_Transmit(CAN1, &msg);
+	CAN_Transmit(_CANx, &msg);
 }
 
 void UCAN::Read(Data_Typedef& data) {
@@ -72,13 +73,13 @@ void UCAN::SetEventPool(voidFun rcvEvent, UEventPool* pool) {
 
 void UCAN::IRQ() {
 	CanRxMsg msg;
-	CAN_Receive(CAN1, CAN_FIFO0, &msg);
+	CAN_Receive(_CANx, CAN_FIFO0, &msg);
 	_rxBuf[_rxBufEnd].id = msg.StdId;
 	_rxBuf[_rxBufEnd].dataSize = msg.DLC;
 
 	memcpy(_rxBuf[_rxBufEnd].data, msg.Data, _rxBuf[_rxBufEnd].dataSize);
 	(++_rxBufEnd) %= _rxBufSize;
-	CAN_ClearITPendingBit(CAN1, CAN_IT_FMP0); // 清除中断
+	CAN_ClearITPendingBit(_CANx, CAN_IT_FMP0); // 清除中断
 
 	if (ReceiveEvent != nullptr) {
 		if (_ePool != nullptr) {
@@ -93,7 +94,6 @@ void UCAN::GPIOInit() {
 	GPIO_InitTypeDef GPIO_InitStructure;
 
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_AFIO, ENABLE);
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_CAN1, ENABLE);
 
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_11;      //can rx  pa11
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
@@ -104,6 +104,10 @@ void UCAN::GPIOInit() {
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
+}
+
+void UCAN::CANRCCInit() {
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_CAN1, ENABLE);
 }
 
 void UCAN::NVICInit() {
@@ -121,7 +125,8 @@ void UCAN::CANInit() {
 	CAN_InitTypeDef CAN_InitStructure;
 	CAN_FilterInitTypeDef CAN_FilterInitStructure;
 
-	CAN_DeInit(CAN1);
+	CANRCCInit();
+	CAN_DeInit(_CANx);
 
 	// 波特率 = Fpclk1/((tbs1+1+tbs2+1+1)*brp);
 	// 125K = 36000K / 16 * (8 + 9 + 1);
@@ -136,7 +141,7 @@ void UCAN::CANInit() {
 	CAN_InitStructure.CAN_BS1 = CAN_BS1_9tq; // 时间段1的时间单元
 	CAN_InitStructure.CAN_BS2 = CAN_BS2_8tq; // 时间段2的时间单元
 	CAN_InitStructure.CAN_Prescaler = 2; // 分频系数
-	CAN_Init(CAN1, &CAN_InitStructure);
+	CAN_Init(_CANx, &CAN_InitStructure);
 
 	CAN_FilterInitStructure.CAN_FilterNumber = 0;
 	CAN_FilterInitStructure.CAN_FilterMode = CAN_FilterMode_IdMask;
@@ -148,5 +153,5 @@ void UCAN::CANInit() {
 	CAN_FilterInitStructure.CAN_FilterFIFOAssignment = CAN_Filter_FIFO0;
 	CAN_FilterInitStructure.CAN_FilterActivation = ENABLE;
 	CAN_FilterInit(&CAN_FilterInitStructure);
-	CAN_ITConfig(CAN1, CAN_IT_FMP0, ENABLE);
+	CAN_ITConfig(_CANx, CAN_IT_FMP0, ENABLE);
 }
