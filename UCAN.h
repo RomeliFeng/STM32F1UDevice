@@ -38,7 +38,7 @@ protected:
 	virtual void GPIOInit() = 0;
 	virtual void CANRCCInit() = 0;
 private:
-	CAN_TypeDef _CANx;
+	CAN_TypeDef* _CANx;
 	uint16_t _idH, _idL;
 	uint16_t _maskIdH, _maskIdL;
 
