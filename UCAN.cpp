@@ -8,16 +8,11 @@
 #include <UCAN.h>
 #include <cstring>
 
-UCAN::UCAN(uint8_t rxBufSize, uint16_t idH, uint16_t idL, uint16_t maskIdH,
-		uint16_t maskIdL, CAN_TypeDef* CANx, UIT_Typedef& it) :
+UCAN::UCAN(uint8_t rxBufSize, CAN_TypeDef* CANx, UIT_Typedef& it) :
 		_it(it) {
 	ReceiveEvent = nullptr;
 
 	_CANx = CANx;
-	_idH = idH;
-	_idL = idL;
-	_maskIdH = maskIdH;
-	_maskIdL = maskIdL;
 
 	_ePool = nullptr;
 	_rxBufSize = rxBufSize;
@@ -30,10 +25,11 @@ UCAN::~UCAN() {
 	delete[] _rxBuf;
 }
 
-void UCAN::Init() {
+void UCAN::Init(uint16_t idH, uint16_t idL, uint16_t maskIdH,
+		uint16_t maskIdL) {
 	GPIOInit();
 	NVICInit();
-	CANInit();
+	CANInit(idH, idL, maskIdH, maskIdL);
 }
 
 void UCAN::Send(Data_Typedef& data) {
@@ -121,7 +117,8 @@ void UCAN::NVICInit() {
 	NVIC_Init(&NVIC_InitStructure);
 }
 
-void UCAN::CANInit() {
+void UCAN::CANInit(uint16_t idH, uint16_t idL, uint16_t maskIdH,
+		uint16_t maskIdL) {
 	CAN_InitTypeDef CAN_InitStructure;
 	CAN_FilterInitTypeDef CAN_FilterInitStructure;
 
@@ -146,10 +143,10 @@ void UCAN::CANInit() {
 	CAN_FilterInitStructure.CAN_FilterNumber = 0;
 	CAN_FilterInitStructure.CAN_FilterMode = CAN_FilterMode_IdMask;
 	CAN_FilterInitStructure.CAN_FilterScale = CAN_FilterScale_32bit;
-	CAN_FilterInitStructure.CAN_FilterIdHigh = _idH;
-	CAN_FilterInitStructure.CAN_FilterIdLow = _idL;
-	CAN_FilterInitStructure.CAN_FilterMaskIdHigh = _maskIdH;
-	CAN_FilterInitStructure.CAN_FilterMaskIdLow = _maskIdL;
+	CAN_FilterInitStructure.CAN_FilterIdHigh = idH;
+	CAN_FilterInitStructure.CAN_FilterIdLow = idL;
+	CAN_FilterInitStructure.CAN_FilterMaskIdHigh = maskIdH;
+	CAN_FilterInitStructure.CAN_FilterMaskIdLow = maskIdL;
 	CAN_FilterInitStructure.CAN_FilterFIFOAssignment = CAN_Filter_FIFO0;
 	CAN_FilterInitStructure.CAN_FilterActivation = ENABLE;
 	CAN_FilterInit(&CAN_FilterInitStructure);
