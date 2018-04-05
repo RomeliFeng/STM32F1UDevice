@@ -28,6 +28,7 @@ public:
 	void Init(uint16_t idH, uint16_t idL, uint16_t maskIdH, uint16_t maskIdL);
 	void Send(Data_Typedef& data);
 	void Send(uint32_t id, uint8_t* data, uint8_t size);
+	void Send(uint32_t id);
 	void Read(Data_Typedef& data);
 
 	uint8_t Available();

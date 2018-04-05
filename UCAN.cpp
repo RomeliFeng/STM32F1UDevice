@@ -46,6 +46,15 @@ void UCAN::Send(uint32_t id, uint8_t* data, uint8_t size) {
 	CAN_Transmit(_CANx, &msg);
 }
 
+void UCAN::Send(uint32_t id) {
+	CanTxMsg msg;
+	msg.StdId = id;
+	msg.RTR = CAN_RTR_Remote;
+	msg.IDE = 0;
+	msg.DLC = 0;
+	CAN_Transmit(_CANx, &msg);
+}
+
 void UCAN::Read(Data_Typedef& data) {
 	data.id = _rxBuf[_rxBufStart].id;
 	data.dataSize = _rxBuf[_rxBufStart].dataSize;
