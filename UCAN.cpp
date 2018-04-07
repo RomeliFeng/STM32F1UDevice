@@ -71,7 +71,7 @@ uint8_t UCAN::Available() {
 					_rxBufSize - _rxBufStart + _rxBufEnd);
 }
 
-void UCAN::SetEventPool(voidFun rcvEvent, UEventPool* pool) {
+void UCAN::SetEventPool(UEvent rcvEvent, UEventPool* pool) {
 	ReceiveEvent = rcvEvent;
 	_ePool = pool;
 }

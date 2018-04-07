@@ -64,7 +64,7 @@ void UADC::RefreshData() {
 	}
 }
 
-void UADC::SetEventPool(voidFun covDoneEvent, UEventPool &pool) {
+void UADC::SetEventPool(UEvent covDoneEvent, UEventPool &pool) {
 	CovertDoneEvent = covDoneEvent;
 	_ePool = &pool;
 }
