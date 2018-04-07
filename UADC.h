@@ -58,7 +58,6 @@ private:
 	void ADCInit();
 	void DMAInit();
 	void ITInit();
-	void CalcDMATC();
 };
 
 #endif /* UADC_H_ */

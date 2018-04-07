@@ -41,7 +41,8 @@ UADC::UADC(ADC_TypeDef* ADCx, uint8_t channelNum, DMA_TypeDef* DMAx,
 	_ePool = nullptr;
 	_DMAx = DMAx;
 	_DMAy_Channelx = DMAy_Channelx;
-	_DMAy_IT_TCx = 0;
+	_DMAy_IT_TCx = CalcDMATC(_DMAy_Channelx);
+
 	_busy = false;
 }
 
@@ -188,7 +189,6 @@ void UADC::DMAInit() {
 	DMA_Init(_DMAy_Channelx, &DMA_InitStructure);
 
 	DMA_ITConfig(_DMAy_Channelx, DMA_IT_TC, ENABLE);
-	CalcDMATC();
 	DMA_Cmd(_DMAy_Channelx, ENABLE);
 }
 
@@ -201,32 +201,4 @@ void UADC::ITInit() {
 			_it.PreemptionPriority;
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = _it.SubPriority;
 	NVIC_Init(&NVIC_InitStructure);
-}
-
-void UADC::CalcDMATC() {
-	if (_DMAy_Channelx == DMA1_Channel1) {
-		_DMAy_IT_TCx = (uint32_t) DMA1_IT_TC1;
-	} else if (_DMAy_Channelx == DMA1_Channel2) {
-		_DMAy_IT_TCx = (uint32_t) DMA1_IT_TC2;
-	} else if (_DMAy_Channelx == DMA1_Channel3) {
-		_DMAy_IT_TCx = (uint32_t) DMA1_IT_TC3;
-	} else if (_DMAy_Channelx == DMA1_Channel4) {
-		_DMAy_IT_TCx = (uint32_t) DMA1_IT_TC4;
-	} else if (_DMAy_Channelx == DMA1_Channel5) {
-		_DMAy_IT_TCx = (uint32_t) DMA1_IT_TC5;
-	} else if (_DMAy_Channelx == DMA1_Channel6) {
-		_DMAy_IT_TCx = (uint32_t) DMA1_IT_TC6;
-	} else if (_DMAy_Channelx == DMA1_Channel7) {
-		_DMAy_IT_TCx = (uint32_t) DMA1_IT_TC7;
-	} else if (_DMAy_Channelx == DMA2_Channel1) {
-		_DMAy_IT_TCx = (uint32_t) DMA2_IT_TC1;
-	} else if (_DMAy_Channelx == DMA2_Channel2) {
-		_DMAy_IT_TCx = (uint32_t) DMA2_IT_TC2;
-	} else if (_DMAy_Channelx == DMA2_Channel3) {
-		_DMAy_IT_TCx = (uint32_t) DMA2_IT_TC3;
-	} else if (_DMAy_Channelx == DMA2_Channel4) {
-		_DMAy_IT_TCx = (uint32_t) DMA2_IT_TC4;
-	} else if (_DMAy_Channelx == DMA2_Channel5) {
-		_DMAy_IT_TCx = (uint32_t) DMA2_IT_TC5;
-	}
 }
