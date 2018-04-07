@@ -34,15 +34,17 @@ USPI::USPI(uint16_t txBufSize, SPI_TypeDef* SPIx, UIT_Typedef& itSPIx,
 	_DMAy_Channelx_Rx = DMAy_Channelx_Rx;
 	_DMAy_Channelx_Tx = DMAy_Channelx_Tx;
 	_DMAy_IT_TCx = CalcDMATC(_DMAy_Channelx_Tx);
-
-
-
 }
 
 USPI::~USPI() {
 }
 
-void USPI::Init() {
+void USPI::Init(SPISpeed_Typedef speed) {
+	GPIOInit();
+	ITInit();
+	SPIInit();
+	//最后打开SPI
+	SPI_Cmd(_SPIx,ENABLE);
 }
 
 bool USPI::IsBusy() {
@@ -51,7 +53,7 @@ bool USPI::IsBusy() {
 void USPI::GPIOInit() {
 }
 
-void USPI::SPIInit() {
+void USPI::SPIInit(SPISpeed_Typedef speed) {
 }
 
 void USPI::ITInit() {
