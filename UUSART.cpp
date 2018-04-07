@@ -93,8 +93,17 @@ void UUSART::Init(uint32_t baud, uint16_t USART_Parity,
  * param2 len 数组长度
  * return Status_Typedef
  */
-Status_Typedef UUSART::Write(uint8_t* data, uint16_t len) {
-	if (_mode == Mode_DMA) {
+Status_Typedef UUSART::Write(uint8_t* data, uint16_t len, bool sync) {
+	if (_mode == Mode_Normal) {
+		//普通模式
+
+		while (len--) {
+			_USARTx->DR = (*data++ & (uint16_t) 0x01FF);
+			while ((_USARTx->SR & USART_FLAG_TXE) == RESET)
+				;
+		}
+	} else if (_mode == Mode_DMA) {
+		//DMA模式
 		while (len != 0) {
 			if ((_DMAy_Channelx_Tx->CMAR != (uint32_t) _txBuf.data)
 					&& (_txBuf.size - _txBuf.end != 0)) {
@@ -109,12 +118,9 @@ Status_Typedef UUSART::Write(uint8_t* data, uint16_t len) {
 				//FIXME@romeli 需要添加超时返回代码
 			}
 		}
-	} else {
-		//非DMA模式
-		while (len--) {
-			_USARTx->DR = (*data++ & (uint16_t) 0x01FF);
-			while ((_USARTx->SR & USART_FLAG_TXE) == RESET)
-				;
+		if(sync){
+			//同步发送模式，等待发送结束
+			while(_dmaTxBusy);
 		}
 	}
 	return Status_Ok;

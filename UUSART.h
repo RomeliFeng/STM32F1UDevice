@@ -37,7 +37,8 @@ public:
 	void Init(uint32_t baud, uint16_t USART_Parity = USART_Parity_No,
 			RS485Status_Typedef RS485Status = RS485Status_Disable);
 
-	Status_Typedef Write(uint8_t* data, uint16_t len) override;
+	Status_Typedef Write(uint8_t* data, uint16_t len, bool sync = false)
+			override;
 
 	bool CheckFrame();
 
@@ -52,17 +53,16 @@ protected:
 	DMA_Channel_TypeDef* _DMAy_Channelx_Tx;
 	uint32_t _DMAy_IT_TCx;
 
-	virtual void USARTRCCInit() = 0;
-	virtual void DMARCCInit() = 0;
-	virtual void GPIOInit() = 0;
-	virtual void RS485DirCtl(RS485Dir_Typedef dir);
-private:
 	volatile bool _dmaTxBusy = false;
 	volatile bool _newFrame = false;
 	RS485Status_Typedef _rs485Status = RS485Status_Disable;
 
 	UIT_Typedef _itUSART, _itDMARx, _itDMATx;
 
+	virtual void USARTRCCInit() = 0;
+	virtual void DMARCCInit() = 0;
+	virtual void GPIOInit() = 0;
+	virtual void RS485DirCtl(RS485Dir_Typedef dir);
 	void USARTInit(uint32_t baud, uint16_t USART_Parity);
 	void ITInit(Mode_Typedef mode);
 	void DMAInit();
