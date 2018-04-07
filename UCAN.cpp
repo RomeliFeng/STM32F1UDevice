@@ -8,13 +8,13 @@
 #include <UCAN.h>
 #include <cstring>
 
-UCAN::UCAN(uint8_t rxBufSize, CAN_TypeDef* CANx, UIT_Typedef& it) :
-		_it(it) {
+UCAN::UCAN(uint8_t rxBufSize, CAN_TypeDef* CANx, UIT_Typedef it) {
 	ReceiveEvent = nullptr;
 
 	_CANx = CANx;
-
 	_ePool = nullptr;
+	_it = it;
+
 	_rxBufSize = rxBufSize;
 	_rxBuf = new Data_Typedef[_rxBufSize]();
 	_rxBufStart = 0;

@@ -9,14 +9,14 @@
 #include <UStepMotorAccDecUnit.h>
 #include <Misc/UDebug.h>
 
-UStepMotor* UStepMotor::_Pool[4];
-uint8_t UStepMotor::_PoolSp = 0;
+UStepMotor* UStepMotor::_pool[4];
+uint8_t UStepMotor::_poolSp = 0;
 
 UStepMotor::UStepMotor(TIM_TypeDef* TIMx, uint8_t TIMx_CCR_Ch,
 		UIT_Typedef& it) {
 	_TIMx = TIMx;
 	_TIMx_CCR_Ch = TIMx_CCR_Ch;
-	_IT = it;
+	_it = it;
 
 	switch (_TIMx_CCR_Ch) {
 	case 1:
@@ -37,30 +37,30 @@ UStepMotor::UStepMotor(TIM_TypeDef* TIMx, uint8_t TIMx_CCR_Ch,
 		break;
 	}
 	//自动将对象指针加入资源池
-	_Pool[_PoolSp++] = this;
+	_pool[_poolSp++] = this;
 
 	_TIMy_FRQ = 0;
 
-	_AccDecUnit = 0;	//速度计算单元
+	_accDecUnit = 0;	//速度计算单元
 
-	_CurStep = 0;	//当前已移动步数
-	_TgtStep = 0;	//目标步数
-	_DecelStartStep = 0;	//减速开始步数
-	_StepEncoder = 0;
+	_curStep = 0;	//当前已移动步数
+	_tgtStep = 0;	//目标步数
+	_decelStartStep = 0;	//减速开始步数
+	_stepEncoder = 0;
 
-	_Accel = 20000;	//加速度
-	_Decel = 20000;	//减速度
-	_MaxSpeed = 10000;	//最大速度
+	_accel = 20000;	//加速度
+	_decel = 20000;	//减速度
+	_maxSpeed = 10000;	//最大速度
 
 	_Limit_CW = 0; //正转保护限位
 	_Limit_CCW = 0; //反转保护限位
 
-	_RelativeDir = Dir_CW; //实际方向对应
-	_CurDir = Dir_CW; //当前方向
+	_relativeDir = Dir_CW; //实际方向对应
+	_curDir = Dir_CW; //当前方向
 
-	_Flow = Flow_Stop;
-	_StepLimitAction = true;
-	_Busy = false;	//当前电机繁忙?
+	_flow = Flow_Stop;
+	_stepLimitAction = true;
+	_busy = false;	//当前电机繁忙?
 }
 
 UStepMotor::~UStepMotor() {
@@ -86,10 +86,10 @@ void UStepMotor::Init() {
  */
 void UStepMotor::InitAll() {
 	//初始化池内所有运动模块
-	for (uint8_t i = 0; i < _PoolSp; ++i) {
-		_Pool[i]->Init();
+	for (uint8_t i = 0; i < _poolSp; ++i) {
+		_pool[i]->Init();
 	}
-	if (_PoolSp == 0) {
+	if (_poolSp == 0) {
 		//Error @Romeli 无运动模块（无法进行运动）
 		UDebugOut("There have no speed control unit exsit");
 	}
@@ -109,9 +109,9 @@ void UStepMotor::InitAll() {
  */
 uint8_t UStepMotor::GetTheLowestPreemptionPriority() {
 	uint8_t preemptionPriority = 0;
-	for (uint8_t i = 0; i < _PoolSp; ++i) {
-		if (_Pool[i]->_IT.PreemptionPriority > preemptionPriority) {
-			preemptionPriority = _Pool[i]->_IT.PreemptionPriority;
+	for (uint8_t i = 0; i < _poolSp; ++i) {
+		if (_pool[i]->_it.PreemptionPriority > preemptionPriority) {
+			preemptionPriority = _pool[i]->_it.PreemptionPriority;
 		}
 	}
 	return preemptionPriority;
@@ -127,9 +127,9 @@ uint8_t UStepMotor::GetTheLowestPreemptionPriority() {
 void UStepMotor::SetSpeed(uint16_t maxSpeed, uint32_t accel) {
 	maxSpeed = maxSpeed < 150 ? uint16_t(150) : maxSpeed;
 	accel = accel < 1500 ? 0 : accel;
-	_MaxSpeed = maxSpeed;
-	_Accel = accel;
-	_Decel = accel;
+	_maxSpeed = maxSpeed;
+	_accel = accel;
+	_decel = accel;
 }
 
 /*
@@ -139,7 +139,7 @@ void UStepMotor::SetSpeed(uint16_t maxSpeed, uint32_t accel) {
  * return void
  */
 void UStepMotor::SetRelativeDir(Dir_Typedef dir) {
-	_RelativeDir = dir;
+	_relativeDir = dir;
 }
 
 /*
@@ -208,55 +208,55 @@ Status_Typedef UStepMotor::Move(uint32_t step, Dir_Typedef dir, bool sync) {
 		return Status_Error;
 	}
 	//锁定当前运动
-	_Busy = true;
+	_busy = true;
 	//使能电机
 	Lock();
 	//获取可用的速度计算单元
-	_AccDecUnit = UStepMotorAccDecUnit::GetFreeUnit(this);
-	if (_AccDecUnit == 0) {
+	_accDecUnit = UStepMotorAccDecUnit::GetFreeUnit(this);
+	if (_accDecUnit == 0) {
 		//没有可用的速度计算单元，放弃本次运动任务
 		UDebugOut("Get speed control unit fail,stop move");
-		_Busy = false;
+		_busy = false;
 		return Status_Error;
 	}
 	//清零当前计数
-	_CurStep = 0;
+	_curStep = 0;
 	if (step != 0) {
 		//基于步数运动
-		_StepLimitAction = true;
-		_TgtStep = step;
+		_stepLimitAction = true;
+		_tgtStep = step;
 
-		if ((_Decel != 0) && (_TgtStep >= 1)) {
+		if ((_decel != 0) && (_tgtStep >= 1)) {
 			//当减速存在并且处于步数控制的运动流程中
 			//从最高速减速
-			uint32_t tmpStep = GetDecelStep(_MaxSpeed);
+			uint32_t tmpStep = GetDecelStep(_maxSpeed);
 			//无法到达最高速度
-			uint32_t tmpStep2 = _TgtStep >> 1;
+			uint32_t tmpStep2 = _tgtStep >> 1;
 			//当无法到达最高速度时，半步开始减速
-			_DecelStartStep = (
-					tmpStep >= tmpStep2 ? tmpStep2 : _TgtStep - tmpStep) - 1;
+			_decelStartStep = (
+					tmpStep >= tmpStep2 ? tmpStep2 : _tgtStep - tmpStep) - 1;
 		} else {
 			//减速度为0 或者目标步数为1
-			_DecelStartStep = 0;
+			_decelStartStep = 0;
 		}
 	} else {
 		//持续运动，
-		_StepLimitAction = false;
-		_TgtStep = 0;
-		_DecelStartStep = 0;
+		_stepLimitAction = false;
+		_tgtStep = 0;
+		_decelStartStep = 0;
 	}
 
-	if (_Accel != 0) {
+	if (_accel != 0) {
 		//切换步进电机状态为加速
-		_Flow = Flow_Accel;
-		_AccDecUnit->SetMode(UStepMotorAccDecUnit::Mode_Accel);
+		_flow = Flow_Accel;
+		_accDecUnit->SetMode(UStepMotorAccDecUnit::Mode_Accel);
 		//开始加速 目标速度为最大速度
-		_AccDecUnit->Start(UStepMotorAccDecUnit::Mode_Accel);
+		_accDecUnit->Start(UStepMotorAccDecUnit::Mode_Accel);
 		//Warnning 需确保当前流程为加速
-		SetSpeed(_AccDecUnit->GetCurSpeed());
+		SetSpeed(_accDecUnit->GetCurSpeed());
 	} else {
-		_Flow = Flow_Run;
-		SetSpeed(_MaxSpeed);
+		_flow = Flow_Run;
+		SetSpeed(_maxSpeed);
 	}
 
 	TIM_PSC_Reload(_TIMx);
@@ -266,7 +266,7 @@ Status_Typedef UStepMotor::Move(uint32_t step, Dir_Typedef dir, bool sync) {
 	TIM_Enable(_TIMx);
 
 	if (sync) {
-		while (_Busy)
+		while (_busy)
 			;
 	}
 	return Status_Ok;
@@ -311,18 +311,18 @@ void UStepMotor::Stop() {
 	//尝试释放当前运动模块占用的单元
 	UStepMotorAccDecUnit::Free(this);
 	//清空忙标志
-	_Busy = false;
-	switch (_CurDir) {
+	_busy = false;
+	switch (_curDir) {
 	case Dir_CW:
-		_StepEncoder += _CurStep;
+		_stepEncoder += _curStep;
 		break;
 	case Dir_CCW:
-		_StepEncoder -= _CurStep;
+		_stepEncoder -= _curStep;
 		break;
 	default:
 		break;
 	}
-	_CurStep = 0;
+	_curStep = 0;
 }
 
 /*
@@ -332,9 +332,9 @@ void UStepMotor::Stop() {
  */
 void UStepMotor::StopSlow() {
 	//根据当前步数和从当前速度减速所需步数计算目标步数
-	_TgtStep = GetDecelStep(_MaxSpeed) + _CurStep;
+	_tgtStep = GetDecelStep(_maxSpeed) + _curStep;
 	//变更模式为步数限制
-	_StepLimitAction = true;
+	_stepLimitAction = true;
 	StartDec();
 }
 
@@ -363,8 +363,8 @@ void UStepMotor::Unlock() {
  */
 bool UStepMotor::SafetyProtect() {
 	bool status = true;
-	if (_Busy) {
-		switch (_CurDir) {
+	if (_busy) {
+		switch (_curDir) {
 		case Dir_CW:
 			if (GetLimit_CW()) {
 				status = false;
@@ -390,41 +390,41 @@ bool UStepMotor::SafetyProtect() {
  * return void
  */
 void UStepMotor::IRQ() {
-	_CurStep++;
+	_curStep++;
 
 	//处于步数限制运动中 并且 到达指定步数，停止运动
-	if (_StepLimitAction && (_CurStep == _TgtStep)) {
+	if (_stepLimitAction && (_curStep == _tgtStep)) {
 		//当处于步数运动并且到达指定步数时，停止
-		_Flow = Flow_Stop;
+		_flow = Flow_Stop;
 	}
 
-	switch (_Flow) {
+	switch (_flow) {
 	case Flow_Accel:
-		if (_StepLimitAction) {
+		if (_stepLimitAction) {
 			//步数限制运动模式
-			if (_CurStep >= _DecelStartStep) {
+			if (_curStep >= _decelStartStep) {
 				//到达减速步数，进入减速流程
 				StartDec();
-				_Flow = Flow_Decel;
+				_flow = Flow_Decel;
 			}
 		}
-		if (_AccDecUnit->IsDone()) {
+		if (_accDecUnit->IsDone()) {
 			//到达最高步数，开始匀速流程
-			_Flow = Flow_Run;
+			_flow = Flow_Run;
 		}
-		SetSpeed(_AccDecUnit->GetCurSpeed());
+		SetSpeed(_accDecUnit->GetCurSpeed());
 		break;
 	case Flow_Run:
-		if (_Decel != 0) {
-			if (_StepLimitAction && (_CurStep >= _DecelStartStep)) {
+		if (_decel != 0) {
+			if (_stepLimitAction && (_curStep >= _decelStartStep)) {
 				//到达减速步数，进入减速流程
 				StartDec();
-				_Flow = Flow_Decel;
+				_flow = Flow_Decel;
 			}
 		}
 		break;
 	case Flow_Decel:
-		SetSpeed(_AccDecUnit->GetCurSpeed());
+		SetSpeed(_accDecUnit->GetCurSpeed());
 		break;
 	case Flow_Stop:
 		Stop();
@@ -584,11 +584,11 @@ void UStepMotor::ITInit() {
 	NVIC_InitTypeDef NVIC_InitStructure;
 	//设置中断
 
-	NVIC_InitStructure.NVIC_IRQChannel = _IT.NVIC_IRQChannel;
+	NVIC_InitStructure.NVIC_IRQChannel = _it.NVIC_IRQChannel;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
-			_IT.PreemptionPriority;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = _IT.SubPriority;
+			_it.PreemptionPriority;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = _it.SubPriority;
 	NVIC_Init(&NVIC_InitStructure);
 }
 
@@ -599,8 +599,8 @@ void UStepMotor::ITInit() {
  * return void
  */
 void UStepMotor::SetDir(Dir_Typedef dir) {
-	_CurDir = dir;
-	if (_CurDir == _RelativeDir) {
+	_curDir = dir;
+	if (_curDir == _relativeDir) {
 		SetDirPin(ENABLE);
 	} else {
 		SetDirPin(DISABLE);
@@ -614,7 +614,7 @@ void UStepMotor::SetDir(Dir_Typedef dir) {
  */
 void UStepMotor::StartDec() {	//关闭速度计算单元
 //开始减速计算
-	_AccDecUnit->Start(UStepMotorAccDecUnit::Mode_Decel);
+	_accDecUnit->Start(UStepMotorAccDecUnit::Mode_Decel);
 }
 
 /*
@@ -624,7 +624,7 @@ void UStepMotor::StartDec() {	//关闭速度计算单元
  * return uint32_t
  */
 uint32_t UStepMotor::GetDecelStep(uint16_t speedFrom) {
-	float n = (float) (speedFrom - STEP_MOTOR_MIN_SPEED) / (float) _Decel;
+	float n = (float) (speedFrom - STEP_MOTOR_MIN_SPEED) / (float) _decel;
 	return (uint32_t) ((float) (speedFrom + STEP_MOTOR_MIN_SPEED) * n) >> 1;
 }
 

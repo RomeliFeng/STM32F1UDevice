@@ -9,7 +9,7 @@
 
 UTimeTick::UTimeTick(TIM_TypeDef* TIMx, UIT_Typedef& it) {
 	_TIMx = TIMx;
-	_IT = it;
+	_it = it;
 }
 
 void UTimeTick::Init(uint16_t ms) {
@@ -33,11 +33,11 @@ void UTimeTick::TIMInit(uint16_t ms) {
 void UTimeTick::NVICInit() {
 	NVIC_InitTypeDef NVIC_InitStructure;
 
-	NVIC_InitStructure.NVIC_IRQChannel = _IT.NVIC_IRQChannel;
+	NVIC_InitStructure.NVIC_IRQChannel = _it.NVIC_IRQChannel;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
-			_IT.PreemptionPriority;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = _IT.SubPriority;
+			_it.PreemptionPriority;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = _it.SubPriority;
 	NVIC_Init(&NVIC_InitStructure);
 
 	TIM_ITConfig(_TIMx, TIM_IT_Update, ENABLE);

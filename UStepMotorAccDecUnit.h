@@ -40,13 +40,13 @@ public:
 
 	//内联函数
 	inline bool IsBusy() {
-		return _Busy;
+		return _busy;
 	}
 	inline bool IsDone() {
-		return _Done;
+		return _done;
 	}
 	inline void SetMode(Mode_Typedef mode) {
-		_Mode = mode;
+		_mode = mode;
 	}
 
 	uint16_t GetCurSpeed();
@@ -56,21 +56,21 @@ public:
 	void IRQ();
 protected:
 	TIM_TypeDef* _TIMx;	//速度计算用定时器
-	UStepMotor* _StepMotor;
+	UStepMotor* _stepMotor;
 
-	UIT_Typedef _IT; //中断优先级
+	UIT_Typedef _it; //中断优先级
 
 	virtual void TIMRCCInit() = 0;
 private:
-	static UStepMotorAccDecUnit* _Pool[];
-	static uint8_t _PoolSp;
+	static UStepMotorAccDecUnit* _pool[];
+	static uint8_t _poolSp;
 
-	Mode_Typedef _Mode;
-	uint32_t _Accel;
-	uint32_t _Decel;
-	uint16_t _MaxSpeed;
-	bool _Done;
-	volatile bool _Busy;
+	Mode_Typedef _mode;
+	uint32_t _accel;
+	uint32_t _decel;
+	uint16_t _maxSpeed;
+	bool _done;
+	volatile bool _busy;
 
 	void TIMInit();
 	void ITInit();

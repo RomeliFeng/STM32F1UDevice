@@ -8,8 +8,8 @@
 #include <UStepMotorAccDecUnit.h>
 #include <Misc/UDebug.h>
 
-UStepMotorAccDecUnit* UStepMotorAccDecUnit::_Pool[4];
-uint8_t UStepMotorAccDecUnit::_PoolSp = 0;
+UStepMotorAccDecUnit* UStepMotorAccDecUnit::_pool[4];
+uint8_t UStepMotorAccDecUnit::_poolSp = 0;
 
 /*
  * author Romeli
@@ -19,18 +19,18 @@ uint8_t UStepMotorAccDecUnit::_PoolSp = 0;
 UStepMotorAccDecUnit::UStepMotorAccDecUnit(TIM_TypeDef* TIMx,
 		UIT_Typedef& it) {
 	_TIMx = TIMx;
-	_IT = it;
+	_it = it;
 	//自动将对象指针加入资源池
-	_Pool[_PoolSp++] = this;
+	_pool[_poolSp++] = this;
 
 	/* Do not care what their value */
-	_StepMotor = 0;
-	_Mode = Mode_Accel;
-	_MaxSpeed = 10000;
-	_Accel = 20000;
-	_Decel = 20000;
-	_Busy = false;
-	_Done = false;
+	_stepMotor = 0;
+	_mode = Mode_Accel;
+	_maxSpeed = 10000;
+	_accel = 20000;
+	_decel = 20000;
+	_busy = false;
+	_done = false;
 }
 
 UStepMotorAccDecUnit::~UStepMotorAccDecUnit() {
@@ -42,9 +42,9 @@ UStepMotorAccDecUnit::~UStepMotorAccDecUnit() {
  * return void
  */
 void UStepMotorAccDecUnit::Init() {
-	_StepMotor = 0;
-	_Busy = false;
-	_Done = false;
+	_stepMotor = 0;
+	_busy = false;
+	_done = false;
 	TIMInit();
 	ITInit();
 }
@@ -56,10 +56,10 @@ void UStepMotorAccDecUnit::Init() {
  */
 void UStepMotorAccDecUnit::InitAll() {
 	//初始化池内所有单元
-	for (uint8_t i = 0; i < _PoolSp; ++i) {
-		_Pool[i]->Init();
+	for (uint8_t i = 0; i < _poolSp; ++i) {
+		_pool[i]->Init();
 	}
-	if (_PoolSp == 0) {
+	if (_poolSp == 0) {
 		//Error @Romeli 无速度计算单元（无法进行运动）
 		UDebugOut("There have no speed control unit exsit");
 	}
@@ -72,9 +72,9 @@ void UStepMotorAccDecUnit::InitAll() {
  */
 uint8_t UStepMotorAccDecUnit::GetTheLowestPreemptionPriority() {
 	uint8_t preemptionPriority = 0;
-	for (uint8_t i = 0; i < _PoolSp; ++i) {
-		if (_Pool[i]->_IT.PreemptionPriority > preemptionPriority) {
-			preemptionPriority = _Pool[i]->_IT.PreemptionPriority;
+	for (uint8_t i = 0; i < _poolSp; ++i) {
+		if (_pool[i]->_it.PreemptionPriority > preemptionPriority) {
+			preemptionPriority = _pool[i]->_it.PreemptionPriority;
 		}
 	}
 	return preemptionPriority;
@@ -89,14 +89,14 @@ UStepMotorAccDecUnit* UStepMotorAccDecUnit::GetFreeUnit(
 		UStepMotor* stepMotor) {
 	//遍历池内所有单元
 	UStepMotorAccDecUnit* unit;
-	for (uint8_t i = 0; i < _PoolSp; ++i) {
-		unit = _Pool[i];
-		if (!unit->_Busy) {
+	for (uint8_t i = 0; i < _poolSp; ++i) {
+		unit = _pool[i];
+		if (!unit->_busy) {
 			//如果当前单元空闲，锁定当前单元供本次运动使用
 			unit->Lock(stepMotor);
 			return unit;
 		} else {
-			if (!unit->_StepMotor->_Busy) {
+			if (!unit->_stepMotor->_busy) {
 				//Error @Romeli 释放了一个被锁定的速度控制单元（待验证）
 				UDebugOut("There have no speed control unit exsit");
 				//如果当前单元被占用，但是运动模块空闲，视为当前单元空闲，锁定当前单元供本次运动使用
@@ -119,9 +119,9 @@ UStepMotorAccDecUnit* UStepMotorAccDecUnit::GetFreeUnit(
 void UStepMotorAccDecUnit::Free(UStepMotor* stepMotor) {
 	UStepMotorAccDecUnit* unit;
 	//释放当前运动模块所占用的加减速单元
-	for (uint8_t i = 0; i < _PoolSp; ++i) {
-		unit = _Pool[i];
-		if (unit->_StepMotor == stepMotor) {
+	for (uint8_t i = 0; i < _poolSp; ++i) {
+		unit = _pool[i];
+		if (unit->_stepMotor == stepMotor) {
 			unit->Free();
 		}
 	}
@@ -136,7 +136,7 @@ void UStepMotorAccDecUnit::Free() {
 	//关闭当前单元
 	Stop();
 	//复位标志位，解锁当前单元
-	_Busy = false;
+	_busy = false;
 }
 
 /*
@@ -147,15 +147,15 @@ void UStepMotorAccDecUnit::Free() {
  */
 void UStepMotorAccDecUnit::Lock(UStepMotor* stepMotor) {
 	//存储当前单元的运动模块
-	_StepMotor = stepMotor;
+	_stepMotor = stepMotor;
 	//存储最大速度
-	_MaxSpeed = _StepMotor->_MaxSpeed;
+	_maxSpeed = _stepMotor->_maxSpeed;
 	//存储加速度
-	_Accel = _StepMotor->_Accel;
+	_accel = _stepMotor->_accel;
 	//存储减速度
-	_Decel = _StepMotor->_Decel;
+	_decel = _stepMotor->_decel;
 	//置忙标志位，锁定当前单元
-	_Busy = true;
+	_busy = true;
 }
 
 /*
@@ -169,20 +169,20 @@ void UStepMotorAccDecUnit::Start(Mode_Typedef mode) {
 	//关闭可能存在的计算任务
 	Stop();
 	SetMode(mode);
-	_Done = false;
+	_done = false;
 
 	uint16_t initSpeed = STEP_MOTOR_MIN_SPEED;
-	switch (_Mode) {
+	switch (_mode) {
 	case Mode_Accel:
-		_TIMx->PSC = (uint16_t) (SystemCoreClock / _Accel);
-		_TIMx->ARR = _MaxSpeed;
+		_TIMx->PSC = (uint16_t) (SystemCoreClock / _accel);
+		_TIMx->ARR = _maxSpeed;
 		initSpeed = STEP_MOTOR_MIN_SPEED;
 		break;
 	case Mode_Decel: {
 		uint16_t speed = uint16_t(_TIMx->CNT);
-		_TIMx->PSC = (uint16_t) (SystemCoreClock / _Decel);
-		_TIMx->ARR = (uint16_t) (_MaxSpeed - STEP_MOTOR_MIN_SPEED);
-		initSpeed = (uint16_t) (_MaxSpeed - speed);
+		_TIMx->PSC = (uint16_t) (SystemCoreClock / _decel);
+		_TIMx->ARR = (uint16_t) (_maxSpeed - STEP_MOTOR_MIN_SPEED);
+		initSpeed = (uint16_t) (_maxSpeed - speed);
 		break;
 	}
 	default:
@@ -216,14 +216,14 @@ void UStepMotorAccDecUnit::Stop() {
  */
 uint16_t UStepMotorAccDecUnit::GetCurSpeed() {
 	//读取当前速度
-	uint16_t speed = uint16_t(_Done ? _TIMx->ARR : _TIMx->CNT);
-	switch (_Mode) {
+	uint16_t speed = uint16_t(_done ? _TIMx->ARR : _TIMx->CNT);
+	switch (_mode) {
 	case Mode_Accel:
 		return speed;
 		break;
 	case Mode_Decel:
 		//计算当前速度（部分定时器没有向下计数）
-		return (uint16_t) (_MaxSpeed - speed);
+		return (uint16_t) (_maxSpeed - speed);
 		break;
 	default:
 		//Error @Romeli 错误的状态，不应该发生（超出最大同时运动轴数，应该避免）
@@ -257,7 +257,7 @@ void UStepMotorAccDecUnit::IRQ() {
 	//停止
 	Stop();
 	_TIMx->CNT = _TIMx->ARR;
-	_Done = true;
+	_done = true;
 }
 
 /*
@@ -289,11 +289,11 @@ void UStepMotorAccDecUnit::TIMInit() {
 void UStepMotorAccDecUnit::ITInit() {
 	NVIC_InitTypeDef NVIC_InitStructure;
 	 //设置中断
-	NVIC_InitStructure.NVIC_IRQChannel = _IT.NVIC_IRQChannel;
+	NVIC_InitStructure.NVIC_IRQChannel = _it.NVIC_IRQChannel;
 	 NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
-			_IT.PreemptionPriority;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = _IT.SubPriority;
+			_it.PreemptionPriority;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = _it.SubPriority;
 	NVIC_Init(&NVIC_InitStructure);
 }
 

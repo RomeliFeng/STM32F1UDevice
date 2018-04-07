@@ -37,7 +37,7 @@ public:
 	static uint8_t GetTheLowestPreemptionPriority();
 
 	bool IsBusy() {
-		return _Busy;
+		return _busy;
 	}
 	//设置速度和加速度
 	void SetSpeed(uint16_t maxSpeed, uint32_t accel);
@@ -49,16 +49,16 @@ public:
 	void SetLimit(uint8_t limit_CW, uint8_t limit_CCW);
 	void SetLimit(Dir_Typedef dir, uint8_t limit);
 	inline uint32_t GetCurStep() {
-		return _CurStep;
+		return _curStep;
 	}
 	inline uint32_t GetTgtStep() {
-		return _TgtStep;
+		return _tgtStep;
 	}
 	inline int32_t GetPos() {
-		return _StepEncoder;
+		return _stepEncoder;
 	}
 	inline void SetPos(int32_t pos) {
-		_StepEncoder = pos;
+		_stepEncoder = pos;
 	}
 
 	//根据步数进行移动
@@ -77,7 +77,7 @@ public:
 	void IRQ();
 protected:
 	TIM_TypeDef* _TIMx;	//脉冲发生用定时器
-	UIT_Typedef _IT; //中断优先级
+	UIT_Typedef _it; //中断优先级
 
 	uint32_t _TIMy_FRQ;	//脉冲发生定时器的频率，由系统主频/分频数算的
 	volatile uint16_t* _TIMx_CCRx; //脉冲发生定时器的输出通道
@@ -95,26 +95,26 @@ protected:
 	virtual bool GetLimit_CW();
 	virtual bool GetLimit_CCW();
 private:
-	static UStepMotor* _Pool[];
-	static uint8_t _PoolSp;
+	static UStepMotor* _pool[];
+	static uint8_t _poolSp;
 
-	UStepMotorAccDecUnit* _AccDecUnit;	//速度计算单元
+	UStepMotorAccDecUnit* _accDecUnit;	//速度计算单元
 
-	volatile uint32_t _CurStep;	//当前已移动步数
-	volatile uint32_t _TgtStep;	//目标步数
-	uint32_t _DecelStartStep;	//减速开始步数
-	int32_t _StepEncoder;
+	volatile uint32_t _curStep;	//当前已移动步数
+	volatile uint32_t _tgtStep;	//目标步数
+	uint32_t _decelStartStep;	//减速开始步数
+	int32_t _stepEncoder;
 
-	uint32_t _Accel;	//加速度
-	uint32_t _Decel;	//减速度
-	uint16_t _MaxSpeed;	//最大速度
+	uint32_t _accel;	//加速度
+	uint32_t _decel;	//减速度
+	uint16_t _maxSpeed;	//最大速度
 
-	Dir_Typedef _RelativeDir; //实际方向对应
-	Dir_Typedef _CurDir; //当前方向
+	Dir_Typedef _relativeDir; //实际方向对应
+	Dir_Typedef _curDir; //当前方向
 
-	volatile Flow_Typedef _Flow;	//当前电机状态
-	volatile bool _StepLimitAction;	//是否由步数限制运动
-	volatile bool _Busy;	//当前电机繁忙?
+	volatile Flow_Typedef _flow;	//当前电机状态
+	volatile bool _stepLimitAction;	//是否由步数限制运动
+	volatile bool _busy;	//当前电机繁忙?
 
 	void TIMInit();
 	void ITInit();

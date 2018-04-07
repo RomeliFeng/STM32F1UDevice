@@ -22,7 +22,7 @@ public:
 
 	voidFun ReceiveEvent;
 
-	UCAN(uint8_t rxBufSize, CAN_TypeDef* CANx, UIT_Typedef& it);
+	UCAN(uint8_t rxBufSize, CAN_TypeDef* CANx, UIT_Typedef it);
 	virtual ~UCAN();
 
 	void Init(uint16_t idH, uint16_t idL, uint16_t maskIdH, uint16_t maskIdL);
@@ -39,14 +39,15 @@ protected:
 	virtual void CANRCCInit() = 0;
 private:
 	CAN_TypeDef* _CANx;
-	UIT_Typedef& _it;
 	UEventPool* _ePool;
+	UIT_Typedef _it;
 	Data_Typedef* _rxBuf;
 	uint8_t _rxBufSize;
 	uint8_t _rxBufStart, _rxBufEnd;
 
 	void NVICInit();
-	void CANInit(uint16_t idH, uint16_t idL, uint16_t maskIdH, uint16_t maskIdL);
+	void CANInit(uint16_t idH, uint16_t idL, uint16_t maskIdH,
+			uint16_t maskIdL);
 };
 
 #endif /* UCAN_H_ */
