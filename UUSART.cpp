@@ -14,7 +14,9 @@
 
 UUSART::UUSART(uint16_t rxBufSize, uint16_t txBufSize, USART_TypeDef* USARTx,
 		UIT_Typedef& itUSART) :
-		UStream(rxBufSize, txBufSize) {
+		UStream(rxBufSize, txBufSize, 0, 0) {
+	_periph = Periph_USART;
+
 	_USARTx = USARTx;
 	_itUSART = itUSART;
 
@@ -23,9 +25,6 @@ UUSART::UUSART(uint16_t rxBufSize, uint16_t txBufSize, USART_TypeDef* USARTx,
 	_DMAy_IT_TCx = 0;
 	_DMAy_Channelx_Rx = 0;
 	_DMAy_Channelx_Tx = 0;
-
-	ReceiveEvent = nullptr;
-	_ePool = nullptr;
 
 	_mode = Mode_Normal;
 }
@@ -36,6 +35,8 @@ UUSART::UUSART(uint16_t rxBufSize, uint16_t txBufSize, USART_TypeDef* USARTx,
 		DMA_Channel_TypeDef* DMAy_Channelx_Tx, UIT_Typedef& itDMARx,
 		UIT_Typedef& itDMATx) :
 		UStream(rxBufSize, txBufSize, rxBufSize, txBufSize) {
+	_periph = Periph_USART;
+
 	_USARTx = USARTx;
 	_itUSART = itUSART;
 	_itDMARx = itDMARx;
@@ -47,10 +48,7 @@ UUSART::UUSART(uint16_t rxBufSize, uint16_t txBufSize, USART_TypeDef* USARTx,
 	_itDMARx = itDMARx;
 	_itDMATx = itDMATx;
 
-	CalcDMATC();
-
-	ReceiveEvent = nullptr;
-	_ePool = nullptr;
+	_DMAy_IT_TCx = CalcDMATC(_DMAy_Channelx_Tx);
 
 	_mode = Mode_DMA;
 }
@@ -139,18 +137,6 @@ bool UUSART::CheckFrame() {
 
 /*
  * author Romeli
- * explain 设置事件触发时自动加入事件池
- * param1 rcvEvent ReceiveEvent的回调函数
- * param2 pool 触发时会加入的的事件池
- * return void
- */
-void UUSART::SetEventPool(voidFun rcvEvent, UEventPool& pool) {
-	ReceiveEvent = rcvEvent;
-	_ePool = &pool;
-}
-
-/*
- * author Romeli
  * explain 串口接收中断
  * return Status_Typedef
  */
@@ -183,11 +169,11 @@ Status_Typedef UUSART::IRQUSART() {
 		USART_ReceiveData(_USARTx);
 		//USART_ClearITPendingBit(_USARTx, USART_IT_IDLE);
 		//串口帧接收事件
-		if (ReceiveEvent != nullptr) {
-			if (_ePool != nullptr) {
-				_ePool->Insert(ReceiveEvent);
+		if (ReceivedEvent != nullptr) {
+			if (_receivedEventPool != nullptr) {
+				_receivedEventPool->Insert(ReceivedEvent);
 			} else {
-				ReceiveEvent();
+				ReceivedEvent();
 			}
 		}
 	}
@@ -304,39 +290,6 @@ void UUSART::RS485DirCtl(RS485Dir_Typedef dir) {
 
 	} else {
 
-	}
-}
-
-/*
- * author Romeli
- * explain 根据DMA通道计算TC位
- * return void
- */
-void UUSART::CalcDMATC() {
-	if (_DMAy_Channelx_Tx == DMA1_Channel1) {
-		_DMAy_IT_TCx = (uint32_t) DMA1_IT_TC1;
-	} else if (_DMAy_Channelx_Tx == DMA1_Channel2) {
-		_DMAy_IT_TCx = (uint32_t) DMA1_IT_TC2;
-	} else if (_DMAy_Channelx_Tx == DMA1_Channel3) {
-		_DMAy_IT_TCx = (uint32_t) DMA1_IT_TC3;
-	} else if (_DMAy_Channelx_Tx == DMA1_Channel4) {
-		_DMAy_IT_TCx = (uint32_t) DMA1_IT_TC4;
-	} else if (_DMAy_Channelx_Tx == DMA1_Channel5) {
-		_DMAy_IT_TCx = (uint32_t) DMA1_IT_TC5;
-	} else if (_DMAy_Channelx_Tx == DMA1_Channel6) {
-		_DMAy_IT_TCx = (uint32_t) DMA1_IT_TC6;
-	} else if (_DMAy_Channelx_Tx == DMA1_Channel7) {
-		_DMAy_IT_TCx = (uint32_t) DMA1_IT_TC7;
-	} else if (_DMAy_Channelx_Tx == DMA2_Channel1) {
-		_DMAy_IT_TCx = (uint32_t) DMA2_IT_TC1;
-	} else if (_DMAy_Channelx_Tx == DMA2_Channel2) {
-		_DMAy_IT_TCx = (uint32_t) DMA2_IT_TC2;
-	} else if (_DMAy_Channelx_Tx == DMA2_Channel3) {
-		_DMAy_IT_TCx = (uint32_t) DMA2_IT_TC3;
-	} else if (_DMAy_Channelx_Tx == DMA2_Channel4) {
-		_DMAy_IT_TCx = (uint32_t) DMA2_IT_TC4;
-	} else if (_DMAy_Channelx_Tx == DMA2_Channel5) {
-		_DMAy_IT_TCx = (uint32_t) DMA2_IT_TC5;
 	}
 }
 

@@ -15,11 +15,6 @@
 
 class UUSART: public UStream {
 public:
-
-	enum Mode_Typedef {
-		Mode_Normal, Mode_DMA
-	};
-
 	enum RS485Status_Typedef {
 		RS485Status_Disable, RS485Status_Enable
 	};
@@ -28,7 +23,7 @@ public:
 		RS485Dir_Tx, RS485Dir_Rx
 	};
 
-	voidFun ReceiveEvent;
+	UEvent ReceivedEvent;
 
 	UUSART(uint16_t rxBufSize, uint16_t txBufSize, USART_TypeDef* USARTx,
 			UIT_Typedef& itUSART);
@@ -42,21 +37,19 @@ public:
 	void Init(uint32_t baud, uint16_t USART_Parity = USART_Parity_No,
 			RS485Status_Typedef RS485Status = RS485Status_Disable);
 
-	Status_Typedef Write(uint8_t* data, uint16_t len);
+	Status_Typedef Write(uint8_t* data, uint16_t len) override;
 
 	bool CheckFrame();
 
-	void SetEventPool(voidFun rcvEvent, UEventPool &pool);
-
-	virtual bool IsBusy();
+	virtual bool IsBusy() override;
 
 	Status_Typedef IRQUSART();
 	Status_Typedef IRQDMATx();
 protected:
-	USART_TypeDef *_USARTx;
-	DMA_TypeDef *_DMAx;
-	DMA_Channel_TypeDef *_DMAy_Channelx_Rx;
-	DMA_Channel_TypeDef *_DMAy_Channelx_Tx;
+	USART_TypeDef* _USARTx;
+	DMA_TypeDef* _DMAx;
+	DMA_Channel_TypeDef* _DMAy_Channelx_Rx;
+	DMA_Channel_TypeDef* _DMAy_Channelx_Tx;
 	uint32_t _DMAy_IT_TCx;
 
 	virtual void USARTRCCInit() = 0;
@@ -68,17 +61,11 @@ private:
 	volatile bool _newFrame = false;
 	RS485Status_Typedef _rs485Status = RS485Status_Disable;
 
-	UEventPool* _ePool;
-
-	UIT_Typedef _itUSART;
-	UIT_Typedef _itDMARx;
-	UIT_Typedef _itDMATx;
+	UIT_Typedef _itUSART, _itDMARx, _itDMATx;
 
 	Mode_Typedef _mode;
 
 	UUSART(USART_TypeDef* USARTx);
-
-	void CalcDMATC();
 
 	void USARTInit(uint32_t baud, uint16_t USART_Parity);
 	void ITInit(Mode_Typedef mode);
