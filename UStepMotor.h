@@ -76,27 +76,15 @@ public:
 
 	void IRQ();
 protected:
+	static UStepMotor* _pool[];
+	static uint8_t _poolSp;
+
 	TIM_TypeDef* _TIMx;	//脉冲发生用定时器
 	UIT_Typedef _it; //中断优先级
 
 	uint32_t _TIMy_FRQ;	//脉冲发生定时器的频率，由系统主频/分频数算的
 	volatile uint16_t* _TIMx_CCRx; //脉冲发生定时器的输出通道
 	uint8_t _TIMx_CCR_Ch;
-
-	uint8_t _Limit_CW; //正转保护限位
-	uint8_t _Limit_CCW; //反转保护限位
-
-	virtual void GPIOInit() = 0;
-	virtual void TIMRCCInit() = 0;
-
-	virtual void SetDirPin(FunctionalState newState) = 0;
-	virtual void SetEnPin(FunctionalState newState) = 0;
-
-	virtual bool GetLimit_CW();
-	virtual bool GetLimit_CCW();
-private:
-	static UStepMotor* _pool[];
-	static uint8_t _poolSp;
 
 	UStepMotorAccDecUnit* _accDecUnit;	//速度计算单元
 
@@ -115,6 +103,18 @@ private:
 	volatile Flow_Typedef _flow;	//当前电机状态
 	volatile bool _stepLimitAction;	//是否由步数限制运动
 	volatile bool _busy;	//当前电机繁忙?
+
+	uint8_t _Limit_CW; //正转保护限位
+	uint8_t _Limit_CCW; //反转保护限位
+
+	virtual void GPIOInit() = 0;
+	virtual void TIMRCCInit() = 0;
+
+	virtual void SetDirPin(FunctionalState newState) = 0;
+	virtual void SetEnPin(FunctionalState newState) = 0;
+
+	virtual bool GetLimit_CW();
+	virtual bool GetLimit_CCW();
 
 	void TIMInit();
 	void ITInit();

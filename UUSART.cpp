@@ -135,6 +135,15 @@ bool UUSART::CheckFrame() {
 	}
 }
 
+bool UUSART::IsBusy() {
+	if (_mode == Mode_DMA) {
+		return _dmaTxBusy;
+	} else {
+		//暂时没有中断自动重发的预定
+		return true;
+	}
+}
+
 /*
  * author Romeli
  * explain 串口接收中断
@@ -449,13 +458,4 @@ Status_Typedef UUSART::DMASend(uint8_t *&data, uint16_t &len,
 		txBuf.busy = false;
 	}
 	return Status_Ok;
-}
-
-bool UUSART::IsBusy() {
-	if (_mode == Mode_DMA) {
-		return _dmaTxBusy;
-	} else {
-		//暂时没有中断自动重发的预定
-		return true;
-	}
 }

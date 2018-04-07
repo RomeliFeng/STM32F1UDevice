@@ -55,15 +55,13 @@ public:
 	//中断服务函数
 	void IRQ();
 protected:
+	static UStepMotorAccDecUnit* _pool[];
+	static uint8_t _poolSp;
+
 	TIM_TypeDef* _TIMx;	//速度计算用定时器
 	UStepMotor* _stepMotor;
 
 	UIT_Typedef _it; //中断优先级
-
-	virtual void TIMRCCInit() = 0;
-private:
-	static UStepMotorAccDecUnit* _pool[];
-	static uint8_t _poolSp;
 
 	Mode_Typedef _mode;
 	uint32_t _accel;
@@ -72,6 +70,7 @@ private:
 	bool _done;
 	volatile bool _busy;
 
+	virtual void TIMRCCInit() = 0;
 	void TIMInit();
 	void ITInit();
 };

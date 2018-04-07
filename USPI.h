@@ -12,16 +12,6 @@
 
 class USPI: UStream {
 public:
-	enum SPISpeed_Typedef {
-		SPISpeed_18M,
-		SPISpeed_9M,
-		SPISpeed_4_5M,
-		SPISpeed_2_25M,
-		SPISpeed_1_125M,
-		SPISpeed_562_5K,
-		SPISpeed_281_25K
-	};
-
 	USPI(uint16_t txBufSize, SPI_TypeDef* SPIx, UIT_Typedef& itSPIx);
 	USPI(uint16_t txBufSize, SPI_TypeDef* SPIx, UIT_Typedef& itSPIx,
 			DMA_TypeDef* DMAx, DMA_Channel_TypeDef* DMAy_Channelx_Rx,
@@ -29,7 +19,7 @@ public:
 			UIT_Typedef& itDMATx);
 	virtual ~USPI();
 
-	void Init(SPISpeed_Typedef speed);
+	void Init(uint16_t  SPI_BaudRatePrescaler);
 
 	virtual bool IsBusy() override;
 protected:
@@ -40,13 +30,11 @@ protected:
 	DMA_Channel_TypeDef* _DMAy_Channelx_Tx;
 	uint32_t _DMAy_IT_TCx;
 
-	virtual void GPIOInit();
+	virtual void GPIOInit() = 0;
 	virtual void SPIRCCInit() = 0;
-private:
-	void SPIInit(SPISpeed_Typedef speed);
+	virtual void SPIInit(uint16_t SPI_BaudRatePrescaler);
+	void DMAInit();
 	void ITInit();
-
-	void calcPrescaler(SPISpeed_Typedef speed);
 };
 
 #endif /* USPI_H_ */

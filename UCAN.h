@@ -35,9 +35,6 @@ public:
 	void SetEventPool(UEvent rcvEvent, UEventPool* pool);
 	void IRQ();
 protected:
-	virtual void GPIOInit() = 0;
-	virtual void CANRCCInit() = 0;
-private:
 	CAN_TypeDef* _CANx;
 	UEventPool* _ePool;
 	UIT_Typedef _it;
@@ -45,6 +42,8 @@ private:
 	uint8_t _rxBufSize;
 	uint8_t _rxBufStart, _rxBufEnd;
 
+	virtual void GPIOInit() = 0;
+	virtual void CANRCCInit() = 0;
 	void NVICInit();
 	void CANInit(uint16_t idH, uint16_t idL, uint16_t maskIdH,
 			uint16_t maskIdL);

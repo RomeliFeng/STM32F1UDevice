@@ -63,10 +63,6 @@ private:
 
 	UIT_Typedef _itUSART, _itDMARx, _itDMATx;
 
-	Mode_Typedef _mode;
-
-	UUSART(USART_TypeDef* USARTx);
-
 	void USARTInit(uint32_t baud, uint16_t USART_Parity);
 	void ITInit(Mode_Typedef mode);
 	void DMAInit();

@@ -33,19 +33,18 @@ public:
 	//中断服务子函数
 	void IRQ();
 protected:
-	//编码器定时器
-	TIM_TypeDef* _TIMx;
-
-	virtual void GPIOInit() = 0;
-	virtual void TIMRCCInit() = 0;
-private:
 	static UEncoder* _pool[];
 	static uint8_t _poolSp;
+
+	//编码器定时器
+	TIM_TypeDef* _TIMx;
 
 	UIT_Typedef _it; //中断优先级
 	volatile int16_t _exCNT;
 	Dir_Typedef _relativeDir;
 
+	virtual void GPIOInit() = 0;
+	virtual void TIMRCCInit() = 0;
 	void TIMInit();
 	void ITInit();
 };

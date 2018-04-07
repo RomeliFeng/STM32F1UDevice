@@ -34,11 +34,6 @@ public:
 	void Disable(OutputCh_Typedef outputCh);
 	void SetPulse(uint8_t outputCh, uint16_t pulse);
 protected:
-	virtual void GPIOInit() = 0;
-	virtual void TIMRCCInit() = 0;
-	virtual void TIMInit(uint16_t period, uint16_t pulse);
-	virtual void ITInit();
-private:
 	static UPWM* _pool[4];
 	static uint8_t _poolSp;
 
@@ -46,6 +41,11 @@ private:
 	uint8_t _outputCh;
 	uint16_t _prescaler;
 	bool _inverting;
+
+	virtual void GPIOInit() = 0;
+	virtual void TIMRCCInit() = 0;
+	virtual void TIMInit(uint16_t period, uint16_t pulse);
+	virtual void ITInit();
 };
 
 #endif /* UPWM_H_ */

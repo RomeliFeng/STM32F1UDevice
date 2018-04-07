@@ -18,7 +18,7 @@ public:
 	virtual ~UServo();
 	void Init(int16_t angle);
 	void Set(int16_t angle);
-private:
+protected:
 	UPWM& _uPWM;
 	UPWM::OutputCh_Typedef _ch;
 	int32_t _gain, _offset;

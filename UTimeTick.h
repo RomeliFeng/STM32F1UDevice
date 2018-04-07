@@ -21,7 +21,6 @@ protected:
 	UIT_Typedef _it; //中断优先级
 
 	virtual void TIMRCCInit() = 0;
-private:
 	void TIMInit(uint16_t ms);
 	void NVICInit();
 };

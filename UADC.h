@@ -35,11 +35,6 @@ public:
 protected:
 	ADC_TypeDef* _ADCx;
 
-	virtual void GPIOInit() = 0;
-	virtual void DMARCCInit() = 0;
-	virtual void ADCRCCInit() = 0;
-	virtual void ADCChannelConfig() = 0;
-private:
 	UEventPool* _ePool;
 
 	DMA_TypeDef* _DMAx;
@@ -54,7 +49,10 @@ private:
 	uint32_t _overSampleCount; //最大过采样等级10，计数需要能到20位
 	bool _busy;
 
-
+	virtual void GPIOInit() = 0;
+	virtual void DMARCCInit() = 0;
+	virtual void ADCRCCInit() = 0;
+	virtual void ADCChannelConfig() = 0;
 	void ADCInit();
 	void DMAInit();
 	void ITInit();
