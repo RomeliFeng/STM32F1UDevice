@@ -28,7 +28,7 @@ public:
 	void SetEventPool(voidFun covDoneEvent, UEventPool &pool);
 
 	inline uint32_t GetRange() {
-		return _Range;
+		return _range;
 	}
 
 	void IRQ();
@@ -40,19 +40,19 @@ protected:
 	virtual void ADCRCCInit() = 0;
 	virtual void ADCChannelConfig() = 0;
 private:
-	UEventPool* _EPool;
+	UEventPool* _ePool;
 
 	DMA_TypeDef* _DMAx;
 	DMA_Channel_TypeDef* _DMAy_Channelx;
-	UIT_Typedef &_IT;
-	uint32_t _DMA_IT_TC;
-	volatile uint16_t* _Data;
-	uint32_t* _DataSum;
-	uint32_t _Range;
-	uint8_t _ChannelNum;
-	uint8_t _OverSample;
-	uint32_t _OverSampleCount; //最大过采样等级10，计数需要能到20位
-	bool _Busy;
+	UIT_Typedef _it;
+	uint32_t _DMAy_IT_TCx;
+	volatile uint16_t* _data;
+	uint32_t* _dataSum;
+	uint32_t _range;
+	uint8_t _channelNum;
+	uint8_t _overSample;
+	uint32_t _overSampleCount; //最大过采样等级10，计数需要能到20位
+	bool _busy;
 
 
 	void ADCInit();

@@ -14,34 +14,34 @@
 
 UADC::UADC(ADC_TypeDef* ADCx, uint8_t channelNum, DMA_TypeDef* DMAx,
 		DMA_Channel_TypeDef* DMAy_Channelx, UIT_Typedef &it, uint8_t overSample) :
-		_IT(it) {
+		_it(it) {
 	CovertDoneEvent = nullptr;
 
 	_ADCx = ADCx;
-	_ChannelNum = channelNum;
-	_OverSample = overSample;
-	_Range = uint32_t(4095) << _OverSample;
-	if (_ChannelNum == 0) {
+	_channelNum = channelNum;
+	_overSample = overSample;
+	_range = uint32_t(4095) << _overSample;
+	if (_channelNum == 0) {
 		//Error @Romeli ADC通道 数量不能为0
 		UDebugOut("ADC channel number zero");
 	}
-	if (_OverSample != 0) {
-		if (_OverSample >= 11) {
+	if (_overSample != 0) {
+		if (_overSample >= 11) {
 			//采样等级 ADC 12位；求和32位，过采样次数需要过采样等级*2位，（32-12）/2=10 最高过采样等级
 			//Error @Romeli 过采样等级过高
 			UDebugOut("ADC over sample level to high");
 		}
-		_OverSampleCount = 0;
-		_Data = new uint16_t[_ChannelNum]();
-		_DataSum = new uint32_t[_ChannelNum]();
+		_overSampleCount = 0;
+		_data = new uint16_t[_channelNum]();
+		_dataSum = new uint32_t[_channelNum]();
 	}
-	Data = new uint32_t[_ChannelNum]();
+	Data = new uint32_t[_channelNum]();
 
-	_EPool = nullptr;
+	_ePool = nullptr;
 	_DMAx = DMAx;
 	_DMAy_Channelx = DMAy_Channelx;
-	_DMA_IT_TC = 0;
-	_Busy = false;
+	_DMAy_IT_TCx = 0;
+	_busy = false;
 }
 
 UADC::~UADC() {
@@ -56,8 +56,8 @@ void UADC::Init() {
 }
 
 void UADC::RefreshData() {
-	if (!_Busy) {
-		_Busy = true;
+	if (!_busy) {
+		_busy = true;
 		//开始转换
 		_ADCx->CR2 |= CR2_EXTTRIG_SWSTART_Set;
 	}
@@ -65,25 +65,25 @@ void UADC::RefreshData() {
 
 void UADC::SetEventPool(voidFun covDoneEvent, UEventPool &pool) {
 	CovertDoneEvent = covDoneEvent;
-	_EPool = &pool;
+	_ePool = &pool;
 }
 
 void UADC::IRQ() {
-	_DMAx->IFCR = _DMA_IT_TC;
-	if (_OverSample == 0) {
-		_Busy = false;
+	_DMAx->IFCR = _DMAy_IT_TCx;
+	if (_overSample == 0) {
+		_busy = false;
 	} else {
-		for (uint8_t i = 0; i < _ChannelNum; ++i) {
-			_DataSum[i] += _Data[i];
+		for (uint8_t i = 0; i < _channelNum; ++i) {
+			_dataSum[i] += _data[i];
 		}
-		if (++_OverSampleCount >= (1UL << (uint16_t(_OverSample) << 1))) {
+		if (++_overSampleCount >= (1UL << (uint16_t(_overSample) << 1))) {
 			//达到过采样次数，开始求平均
-			for (uint8_t i = 0; i < _ChannelNum; ++i) {
-				Data[i] = _DataSum[i] >> _OverSample;
-				_DataSum[i] = 0;
+			for (uint8_t i = 0; i < _channelNum; ++i) {
+				Data[i] = _dataSum[i] >> _overSample;
+				_dataSum[i] = 0;
 			}
-			_OverSampleCount = 0;
-			_Busy = false;
+			_overSampleCount = 0;
+			_busy = false;
 		} else {
 			//开始新的转换
 			_ADCx->CR2 |= CR2_EXTTRIG_SWSTART_Set;
@@ -92,8 +92,8 @@ void UADC::IRQ() {
 	}
 	//调用转换完成事件或将事件加入循环
 	if (CovertDoneEvent != nullptr) {
-		if (_EPool != nullptr) {
-			_EPool->Insert(CovertDoneEvent);
+		if (_ePool != nullptr) {
+			_ePool->Insert(CovertDoneEvent);
 		} else {
 			CovertDoneEvent();
 		}
@@ -133,12 +133,12 @@ void UADC::ADCInit() {
 
 	ADC_DeInit(_ADCx);
 
-	if (_ChannelNum > 1) {
+	if (_channelNum > 1) {
 		ADC_InitStructure.ADC_ScanConvMode = ENABLE;
 	} else {
 		ADC_InitStructure.ADC_ScanConvMode = DISABLE;
 	}
-	ADC_InitStructure.ADC_NbrOfChannel = _ChannelNum;
+	ADC_InitStructure.ADC_NbrOfChannel = _channelNum;
 	ADC_InitStructure.ADC_ContinuousConvMode = DISABLE;
 	ADC_InitStructure.ADC_DataAlign = ADC_DataAlign_Right;
 	ADC_InitStructure.ADC_ExternalTrigConv = ADC_ExternalTrigConv_None;
@@ -168,14 +168,14 @@ void UADC::DMAInit() {
 
 	DMA_DeInit(_DMAy_Channelx);
 
-	DMA_InitStructure.DMA_BufferSize = _ChannelNum;
+	DMA_InitStructure.DMA_BufferSize = _channelNum;
 	DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;
 	DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
-	if (_OverSample == 0) {
+	if (_overSample == 0) {
 		DMA_InitStructure.DMA_MemoryBaseAddr = uint32_t(Data);
 		DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Word;
 	} else {
-		DMA_InitStructure.DMA_MemoryBaseAddr = uint32_t(_Data);
+		DMA_InitStructure.DMA_MemoryBaseAddr = uint32_t(_data);
 		DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_HalfWord;
 	}
 	DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
@@ -194,38 +194,38 @@ void UADC::DMAInit() {
 void UADC::ITInit() {
 	NVIC_InitTypeDef NVIC_InitStructure;
 
-	NVIC_InitStructure.NVIC_IRQChannel = _IT.NVIC_IRQChannel;
+	NVIC_InitStructure.NVIC_IRQChannel = _it.NVIC_IRQChannel;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
-			_IT.PreemptionPriority;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = _IT.SubPriority;
+			_it.PreemptionPriority;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = _it.SubPriority;
 	NVIC_Init(&NVIC_InitStructure);
 }
 
 void UADC::CalcDMATC() {
 	if (_DMAy_Channelx == DMA1_Channel1) {
-		_DMA_IT_TC = (uint32_t) DMA1_IT_TC1;
+		_DMAy_IT_TCx = (uint32_t) DMA1_IT_TC1;
 	} else if (_DMAy_Channelx == DMA1_Channel2) {
-		_DMA_IT_TC = (uint32_t) DMA1_IT_TC2;
+		_DMAy_IT_TCx = (uint32_t) DMA1_IT_TC2;
 	} else if (_DMAy_Channelx == DMA1_Channel3) {
-		_DMA_IT_TC = (uint32_t) DMA1_IT_TC3;
+		_DMAy_IT_TCx = (uint32_t) DMA1_IT_TC3;
 	} else if (_DMAy_Channelx == DMA1_Channel4) {
-		_DMA_IT_TC = (uint32_t) DMA1_IT_TC4;
+		_DMAy_IT_TCx = (uint32_t) DMA1_IT_TC4;
 	} else if (_DMAy_Channelx == DMA1_Channel5) {
-		_DMA_IT_TC = (uint32_t) DMA1_IT_TC5;
+		_DMAy_IT_TCx = (uint32_t) DMA1_IT_TC5;
 	} else if (_DMAy_Channelx == DMA1_Channel6) {
-		_DMA_IT_TC = (uint32_t) DMA1_IT_TC6;
+		_DMAy_IT_TCx = (uint32_t) DMA1_IT_TC6;
 	} else if (_DMAy_Channelx == DMA1_Channel7) {
-		_DMA_IT_TC = (uint32_t) DMA1_IT_TC7;
+		_DMAy_IT_TCx = (uint32_t) DMA1_IT_TC7;
 	} else if (_DMAy_Channelx == DMA2_Channel1) {
-		_DMA_IT_TC = (uint32_t) DMA2_IT_TC1;
+		_DMAy_IT_TCx = (uint32_t) DMA2_IT_TC1;
 	} else if (_DMAy_Channelx == DMA2_Channel2) {
-		_DMA_IT_TC = (uint32_t) DMA2_IT_TC2;
+		_DMAy_IT_TCx = (uint32_t) DMA2_IT_TC2;
 	} else if (_DMAy_Channelx == DMA2_Channel3) {
-		_DMA_IT_TC = (uint32_t) DMA2_IT_TC3;
+		_DMAy_IT_TCx = (uint32_t) DMA2_IT_TC3;
 	} else if (_DMAy_Channelx == DMA2_Channel4) {
-		_DMA_IT_TC = (uint32_t) DMA2_IT_TC4;
+		_DMAy_IT_TCx = (uint32_t) DMA2_IT_TC4;
 	} else if (_DMAy_Channelx == DMA2_Channel5) {
-		_DMA_IT_TC = (uint32_t) DMA2_IT_TC5;
+		_DMAy_IT_TCx = (uint32_t) DMA2_IT_TC5;
 	}
 }

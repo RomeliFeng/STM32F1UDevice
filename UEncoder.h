@@ -39,12 +39,12 @@ protected:
 	virtual void GPIOInit() = 0;
 	virtual void TIMRCCInit() = 0;
 private:
-	static UEncoder* _Pool[];
-	static uint8_t _PoolSp;
+	static UEncoder* _pool[];
+	static uint8_t _poolSp;
 
-	UIT_Typedef _IT; //中断优先级
-	volatile int16_t _ExCNT;
-	Dir_Typedef _RelativeDir;
+	UIT_Typedef _it; //中断优先级
+	volatile int16_t _exCNT;
+	Dir_Typedef _relativeDir;
 
 	void TIMInit();
 	void ITInit();

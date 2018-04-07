@@ -8,18 +8,18 @@
 #include <UEncoder.h>
 #include <Misc/UDebug.h>
 
-UEncoder* UEncoder::_Pool[4];
-uint8_t UEncoder::_PoolSp = 0;
+UEncoder* UEncoder::_pool[4];
+uint8_t UEncoder::_poolSp = 0;
 
 UEncoder::UEncoder(TIM_TypeDef* TIMx, UIT_Typedef& it) {
 	_TIMx = TIMx;
-	_IT = it;
+	_it = it;
 
-	_ExCNT = 0;
-	_RelativeDir = Dir_Positive;
+	_exCNT = 0;
+	_relativeDir = Dir_Positive;
 
 	//自动将对象指针加入资源池
-	_Pool[_PoolSp++] = this;
+	_pool[_poolSp++] = this;
 }
 
 UEncoder::~UEncoder() {
@@ -47,10 +47,10 @@ void UEncoder::Init() {
  */
 void UEncoder::InitAll() {
 	//初始化池内所有单元
-	for (uint8_t i = 0; i < _PoolSp; ++i) {
-		_Pool[i]->Init();
+	for (uint8_t i = 0; i < _poolSp; ++i) {
+		_pool[i]->Init();
 	}
-	if (_PoolSp == 0) {
+	if (_poolSp == 0) {
 		//Error @Romeli 无编码器模块
 		UDebugOut("There have encoder module exsit");
 	}
@@ -63,7 +63,7 @@ void UEncoder::InitAll() {
  * return void
  */
 void UEncoder::SetRelativeDir(Dir_Typedef dir) {
-	_RelativeDir = dir;
+	_relativeDir = dir;
 }
 
 /*
@@ -73,16 +73,16 @@ void UEncoder::SetRelativeDir(Dir_Typedef dir) {
  * return void
  */
 void UEncoder::SetPos(int32_t pos) {
-	if (_RelativeDir == Dir_Negtive) {
+	if (_relativeDir == Dir_Negtive) {
 		pos = -pos;
 	}
 	if (pos >= 0) {
-		_ExCNT = uint16_t(pos / 0x10000);
-		_TIMx->CNT = uint16_t(pos - (_ExCNT * 0x10000));
+		_exCNT = uint16_t(pos / 0x10000);
+		_TIMx->CNT = uint16_t(pos - (_exCNT * 0x10000));
 	} else {
 		pos = -pos;
-		_ExCNT = uint16_t(pos / 0x10000 + 1);
-		_TIMx->CNT = uint16_t((_ExCNT * 0x10000) - pos);
+		_exCNT = uint16_t(pos / 0x10000 + 1);
+		_TIMx->CNT = uint16_t((_exCNT * 0x10000) - pos);
 	}
 }
 
@@ -92,8 +92,8 @@ void UEncoder::SetPos(int32_t pos) {
  * return int32_t 当前位置
  */
 int32_t UEncoder::GetPos() const {
-	int32_t pos = int32_t(_ExCNT) * 0x10000 + _TIMx->CNT;
-	return _RelativeDir == Dir_Negtive ? -pos : pos;
+	int32_t pos = int32_t(_exCNT) * 0x10000 + _TIMx->CNT;
+	return _relativeDir == Dir_Negtive ? -pos : pos;
 }
 
 /*
@@ -103,9 +103,9 @@ int32_t UEncoder::GetPos() const {
  */
 void UEncoder::IRQ() {
 	if (_TIMx->CNT <= 0x7fff) {
-		++_ExCNT;
+		++_exCNT;
 	} else {
-		--_ExCNT;
+		--_exCNT;
 	}
 	TIM_Clear_Update_Flag(_TIMx);
 }
@@ -160,11 +160,11 @@ void UEncoder::TIMInit() {
 void UEncoder::ITInit() {
 	NVIC_InitTypeDef NVIC_InitStructure;
 
-	NVIC_InitStructure.NVIC_IRQChannel = _IT.NVIC_IRQChannel;
+	NVIC_InitStructure.NVIC_IRQChannel = _it.NVIC_IRQChannel;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
-			_IT.PreemptionPriority;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = _IT.SubPriority;
+			_it.PreemptionPriority;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = _it.SubPriority;
 	NVIC_Init(&NVIC_InitStructure);
 
 	TIM_ClearITPendingBit(_TIMx, TIM_IT_Update);

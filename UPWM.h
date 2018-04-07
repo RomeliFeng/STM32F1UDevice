@@ -39,13 +39,13 @@ protected:
 	virtual void TIMInit(uint16_t period, uint16_t pulse);
 	virtual void ITInit();
 private:
-	static UPWM* _Pool[4];
-	static uint8_t _PoolSp;
+	static UPWM* _pool[4];
+	static uint8_t _poolSp;
 
 	TIM_TypeDef* _TIMx;
-	uint8_t _OutputCh;
-	uint16_t _Prescaler;
-	bool _Inverting;
+	uint8_t _outputCh;
+	uint16_t _prescaler;
+	bool _inverting;
 };
 
 #endif /* UPWM_H_ */
