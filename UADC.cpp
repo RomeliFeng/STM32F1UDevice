@@ -13,10 +13,11 @@
 #define CR2_EXTTRIG_SWSTART_Reset   ((uint32_t)0xFFAFFFFF)
 
 UADC::UADC(ADC_TypeDef* ADCx, uint8_t channelNum, DMA_TypeDef* DMAx,
-		DMA_Channel_TypeDef* DMAy_Channelx, UIT_Typedef &it, uint8_t overSample) :
-		_it(it) {
+		DMA_Channel_TypeDef* DMAy_Channelx, UIT_Typedef &it,
+		uint8_t overSample) {
 	CovertDoneEvent = nullptr;
 
+	_it = it;
 	_ADCx = ADCx;
 	_channelNum = channelNum;
 	_overSample = overSample;
