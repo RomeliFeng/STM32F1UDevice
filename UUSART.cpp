@@ -13,53 +13,49 @@
 #define CR1_UE_Reset              ((uint16_t)0xDFFF)  /*!< UUSART Disable Mask */
 
 UUSART::UUSART(uint16_t rxBufSize, uint16_t txBufSize, USART_TypeDef* USARTx,
-		UIT_Typedef itUSARTx) :
-		UStream(rxBufSize, txBufSize), _USARTx(USARTx), _ITUSARTx(itUSARTx) {
+		UIT_Typedef& itUSART) :
+		UStream(rxBufSize, txBufSize) {
+	_USARTx = USARTx;
+	_itUSART = itUSART;
+
 	//默认设置
 	_DMAx = 0;
-	_DMA_IT_TC_TX = 0;
+	_DMAy_IT_TCx = 0;
 	_DMAy_Channelx_Rx = 0;
 	_DMAy_Channelx_Tx = 0;
 
-	_EPool = nullptr;
 	ReceiveEvent = nullptr;
-	_Mode = Mode_Interrupt;
+	_ePool = nullptr;
+
+	_mode = Mode_Normal;
 }
 
 UUSART::UUSART(uint16_t rxBufSize, uint16_t txBufSize, USART_TypeDef* USARTx,
-		UIT_Typedef itUSARTx, DMA_TypeDef* DMAx,
+		UIT_Typedef& itUSART, DMA_TypeDef* DMAx,
 		DMA_Channel_TypeDef* DMAy_Channelx_Rx,
-		DMA_Channel_TypeDef* DMAy_Channelx_Tx, UIT_Typedef itDMAxRx,
-		UIT_Typedef itDMAxTx) :
-		UStream(rxBufSize, txBufSize) {
-
+		DMA_Channel_TypeDef* DMAy_Channelx_Tx, UIT_Typedef& itDMARx,
+		UIT_Typedef& itDMATx) :
+		UStream(rxBufSize, txBufSize, rxBufSize, txBufSize) {
 	_USARTx = USARTx;
-	_ITUSARTx = itUSARTx;
+	_itUSART = itUSART;
+	_itDMARx = itDMARx;
+	_itDMATx = itDMATx;
+
 	_DMAx = DMAx;
 	_DMAy_Channelx_Rx = DMAy_Channelx_Rx;
 	_DMAy_Channelx_Tx = DMAy_Channelx_Tx;
-	_ITDMAxRx = itDMAxRx;
-	_ITDMAxTx = itDMAxTx;
+	_itDMARx = itDMARx;
+	_itDMATx = itDMATx;
 
 	CalcDMATC();
 
-	_EPool = nullptr;
 	ReceiveEvent = nullptr;
+	_ePool = nullptr;
 
-	_DMARxBuf.data = 0;
-	_DMARxBuf.end = 0;
-	_DMARxBuf.busy = false;
-
-	_DMATxBuf.data = 0;
-	_DMATxBuf.end = 0;
-	_DMATxBuf.busy = false;
-
-	_Mode = Mode_DMA;
+	_mode = Mode_DMA;
 }
 
 UUSART::~UUSART() {
-	delete[] _DMARxBuf.data;
-	delete[] _DMATxBuf.data;
 }
 
 /*
@@ -73,21 +69,21 @@ UUSART::~UUSART() {
  */
 void UUSART::Init(uint32_t baud, uint16_t USART_Parity,
 		RS485Status_Typedef RS485Status) {
-	_RS485Status = RS485Status;
+	_rs485Status = RS485Status;
 	//GPIO初始化
 	GPIOInit();
 	//如果有流控引脚，使用切换为接受模式
-	if (_RS485Status == RS485Status_Enable) {
+	if (_rs485Status == RS485Status_Enable) {
 		RS485DirCtl(RS485Dir_Rx);
 	}
 	//USART外设初始化
 	USARTInit(baud, USART_Parity);
-	if (_Mode == Mode_DMA) {
+	if (_mode == Mode_DMA) {
 		//DMA初始化
 		DMAInit();
 	}
 	//中断初始化
-	ITInit(_Mode);
+	ITInit(_mode);
 	//使能USART(使用库函数兼容性好)
 	USART_Cmd(_USARTx, ENABLE);
 }
@@ -100,16 +96,16 @@ void UUSART::Init(uint32_t baud, uint16_t USART_Parity,
  * return Status_Typedef
  */
 Status_Typedef UUSART::Write(uint8_t* data, uint16_t len) {
-	if (_Mode == Mode_DMA) {
+	if (_mode == Mode_DMA) {
 		while (len != 0) {
-			if ((_DMAy_Channelx_Tx->CMAR != (uint32_t) _TxBuf.data)
-					&& (_TxBuf.size - _TxBuf.end != 0)) {
+			if ((_DMAy_Channelx_Tx->CMAR != (uint32_t) _txBuf.data)
+					&& (_txBuf.size - _txBuf.end != 0)) {
 				//若缓冲区1空闲，并且有空闲空间
-				DMASend(data, len, _TxBuf);
-			} else if ((_DMAy_Channelx_Tx->CMAR != (uint32_t) _DMATxBuf.data)
-					&& (_DMATxBuf.size - _DMATxBuf.end != 0)) {
+				DMASend(data, len, _txBuf);
+			} else if ((_DMAy_Channelx_Tx->CMAR != (uint32_t) _txBuf2.data)
+					&& (_txBuf2.size - _txBuf2.end != 0)) {
 				//若缓冲区2空闲，并且有空闲空间
-				DMASend(data, len, _DMATxBuf);
+				DMASend(data, len, _txBuf2);
 			} else {
 				//发送繁忙，两个缓冲区均在使用或已满
 				//FIXME@romeli 需要添加超时返回代码
@@ -150,7 +146,7 @@ bool UUSART::CheckFrame() {
  */
 void UUSART::SetEventPool(voidFun rcvEvent, UEventPool& pool) {
 	ReceiveEvent = rcvEvent;
-	_EPool = &pool;
+	_ePool = &pool;
 }
 
 /*
@@ -164,20 +160,20 @@ Status_Typedef UUSART::IRQUSART() {
 	if ((staus & USART_FLAG_IDLE) != RESET) {
 		//帧接收标志被触发
 		_newFrame = true;
-		if (_Mode == Mode_DMA) {
+		if (_mode == Mode_DMA) {
 			//关闭DMA接收
 			_DMAy_Channelx_Rx->CCR &= (uint16_t) (~DMA_CCR1_EN);
 
-			uint16_t len = uint16_t(_RxBuf.size - _DMAy_Channelx_Rx->CNDTR);
+			uint16_t len = uint16_t(_rxBuf.size - _DMAy_Channelx_Rx->CNDTR);
 			//清除DMA标志
 //			_DMAx->IFCR = DMA1_FLAG_GL3 | DMA1_FLAG_TC3 | DMA1_FLAG_TE3
 //					| DMA1_FLAG_HT3;
 			//复位DMA接收区大小
-			_DMAy_Channelx_Rx->CNDTR = _RxBuf.size;
+			_DMAy_Channelx_Rx->CNDTR = _rxBuf.size;
 			//循环搬运数据
 			for (uint16_t i = 0; i < len; ++i) {
-				_RxBuf.data[_RxBuf.end] = _DMARxBuf.data[i];
-				_RxBuf.end = uint16_t((_RxBuf.end + 1) % _RxBuf.size);
+				_rxBuf.data[_rxBuf.end] = _dmaRxBuf.data[i];
+				_rxBuf.end = uint16_t((_rxBuf.end + 1) % _rxBuf.size);
 			}
 			//开启DMA接收
 			_DMAy_Channelx_Rx->CCR |= DMA_CCR1_EN;
@@ -188,8 +184,8 @@ Status_Typedef UUSART::IRQUSART() {
 		//USART_ClearITPendingBit(_USARTx, USART_IT_IDLE);
 		//串口帧接收事件
 		if (ReceiveEvent != nullptr) {
-			if (_EPool != nullptr) {
-				_EPool->Insert(ReceiveEvent);
+			if (_ePool != nullptr) {
+				_ePool->Insert(ReceiveEvent);
 			} else {
 				ReceiveEvent();
 			}
@@ -199,8 +195,8 @@ Status_Typedef UUSART::IRQUSART() {
 	//串口字节接收中断置位
 	if ((staus & USART_FLAG_RXNE) != RESET) {
 		//搬运数据到缓冲区
-		_RxBuf.data[_RxBuf.end] = uint8_t(_USARTx->DR);
-		_RxBuf.end = uint16_t((_RxBuf.end + 1) % _RxBuf.size);
+		_rxBuf.data[_rxBuf.end] = uint8_t(_USARTx->DR);
+		_rxBuf.end = uint16_t((_rxBuf.end + 1) % _rxBuf.size);
 	}
 #endif
 	//串口帧错误中断
@@ -221,17 +217,17 @@ Status_Typedef UUSART::IRQDMATx() {
 	//暂时关闭DMA发送
 	_DMAy_Channelx_Tx->CCR &= (uint16_t) (~DMA_CCR1_EN);
 
-	_DMAx->IFCR = _DMA_IT_TC_TX;
+	_DMAx->IFCR = _DMAy_IT_TCx;
 
 	//判断当前使用的缓冲通道
-	if (_DMAy_Channelx_Tx->CMAR == (uint32_t) _TxBuf.data) {
+	if (_DMAy_Channelx_Tx->CMAR == (uint32_t) _txBuf.data) {
 		//缓冲区1发送完成，置位指针
-		_TxBuf.end = 0;
+		_txBuf.end = 0;
 		//判断缓冲区2是否有数据，并且忙标志未置位（防止填充到一半发送出去）
-		if (_DMATxBuf.end != 0 && _DMATxBuf.busy == false) {
+		if (_txBuf2.end != 0 && _txBuf2.busy == false) {
 			//当前使用缓冲区切换为缓冲区2，并加载DMA发送
-			_DMAy_Channelx_Tx->CMAR = (uint32_t) _DMATxBuf.data;
-			_DMAy_Channelx_Tx->CNDTR = _DMATxBuf.end;
+			_DMAy_Channelx_Tx->CMAR = (uint32_t) _txBuf2.data;
+			_DMAy_Channelx_Tx->CNDTR = _txBuf2.end;
 
 			//使能DMA发送
 			_DMAy_Channelx_Tx->CCR |= DMA_CCR1_EN;
@@ -239,16 +235,16 @@ Status_Typedef UUSART::IRQDMATx() {
 		} else {
 			_DMAy_Channelx_Tx->CMAR = 0;
 			//无数据需要发送，清除发送队列忙标志
-			_DMATxBusy = false;
+			_dmaTxBusy = false;
 		}
-	} else if (_DMAy_Channelx_Tx->CMAR == (uint32_t) _DMATxBuf.data) {
+	} else if (_DMAy_Channelx_Tx->CMAR == (uint32_t) _txBuf2.data) {
 		//缓冲区2发送完成，置位指针
-		_DMATxBuf.end = 0;
+		_txBuf2.end = 0;
 		//判断缓冲区1是否有数据，并且忙标志未置位（防止填充到一半发送出去）
-		if (_TxBuf.end != 0 && _TxBuf.busy == false) {
+		if (_txBuf.end != 0 && _txBuf.busy == false) {
 			//当前使用缓冲区切换为缓冲区1，并加载DMA发送
-			_DMAy_Channelx_Tx->CMAR = (uint32_t) _TxBuf.data;
-			_DMAy_Channelx_Tx->CNDTR = _TxBuf.end;
+			_DMAy_Channelx_Tx->CMAR = (uint32_t) _txBuf.data;
+			_DMAy_Channelx_Tx->CNDTR = _txBuf.end;
 
 			//使能DMA发送
 			_DMAy_Channelx_Tx->CCR |= DMA_CCR1_EN;
@@ -256,14 +252,14 @@ Status_Typedef UUSART::IRQDMATx() {
 		} else {
 			_DMAy_Channelx_Tx->CMAR = 0;
 			//无数据需要发送，清除发送队列忙标志
-			_DMATxBusy = false;
+			_dmaTxBusy = false;
 		}
 	} else {
 		//缓冲区号错误?不应发生
 		return Status_Error;
 	}
 
-	if (_RS485Status == RS485Status_Enable) {
+	if (_rs485Status == RS485Status_Enable) {
 		while ((_USARTx->SR & USART_FLAG_TC) == RESET)
 			;
 		RS485DirCtl(RS485Dir_Rx);
@@ -318,29 +314,29 @@ void UUSART::RS485DirCtl(RS485Dir_Typedef dir) {
  */
 void UUSART::CalcDMATC() {
 	if (_DMAy_Channelx_Tx == DMA1_Channel1) {
-		_DMA_IT_TC_TX = (uint32_t) DMA1_IT_TC1;
+		_DMAy_IT_TCx = (uint32_t) DMA1_IT_TC1;
 	} else if (_DMAy_Channelx_Tx == DMA1_Channel2) {
-		_DMA_IT_TC_TX = (uint32_t) DMA1_IT_TC2;
+		_DMAy_IT_TCx = (uint32_t) DMA1_IT_TC2;
 	} else if (_DMAy_Channelx_Tx == DMA1_Channel3) {
-		_DMA_IT_TC_TX = (uint32_t) DMA1_IT_TC3;
+		_DMAy_IT_TCx = (uint32_t) DMA1_IT_TC3;
 	} else if (_DMAy_Channelx_Tx == DMA1_Channel4) {
-		_DMA_IT_TC_TX = (uint32_t) DMA1_IT_TC4;
+		_DMAy_IT_TCx = (uint32_t) DMA1_IT_TC4;
 	} else if (_DMAy_Channelx_Tx == DMA1_Channel5) {
-		_DMA_IT_TC_TX = (uint32_t) DMA1_IT_TC5;
+		_DMAy_IT_TCx = (uint32_t) DMA1_IT_TC5;
 	} else if (_DMAy_Channelx_Tx == DMA1_Channel6) {
-		_DMA_IT_TC_TX = (uint32_t) DMA1_IT_TC6;
+		_DMAy_IT_TCx = (uint32_t) DMA1_IT_TC6;
 	} else if (_DMAy_Channelx_Tx == DMA1_Channel7) {
-		_DMA_IT_TC_TX = (uint32_t) DMA1_IT_TC7;
+		_DMAy_IT_TCx = (uint32_t) DMA1_IT_TC7;
 	} else if (_DMAy_Channelx_Tx == DMA2_Channel1) {
-		_DMA_IT_TC_TX = (uint32_t) DMA2_IT_TC1;
+		_DMAy_IT_TCx = (uint32_t) DMA2_IT_TC1;
 	} else if (_DMAy_Channelx_Tx == DMA2_Channel2) {
-		_DMA_IT_TC_TX = (uint32_t) DMA2_IT_TC2;
+		_DMAy_IT_TCx = (uint32_t) DMA2_IT_TC2;
 	} else if (_DMAy_Channelx_Tx == DMA2_Channel3) {
-		_DMA_IT_TC_TX = (uint32_t) DMA2_IT_TC3;
+		_DMAy_IT_TCx = (uint32_t) DMA2_IT_TC3;
 	} else if (_DMAy_Channelx_Tx == DMA2_Channel4) {
-		_DMA_IT_TC_TX = (uint32_t) DMA2_IT_TC4;
+		_DMAy_IT_TCx = (uint32_t) DMA2_IT_TC4;
 	} else if (_DMAy_Channelx_Tx == DMA2_Channel5) {
-		_DMA_IT_TC_TX = (uint32_t) DMA2_IT_TC5;
+		_DMAy_IT_TCx = (uint32_t) DMA2_IT_TC5;
 	}
 }
 
@@ -375,25 +371,25 @@ void UUSART::USARTInit(uint32_t baud, uint16_t USART_Parity) {
 void UUSART::ITInit(Mode_Typedef mode) {
 	NVIC_InitTypeDef NVIC_InitStructure;
 
-	NVIC_InitStructure.NVIC_IRQChannel = _ITUSARTx.NVIC_IRQChannel;
+	NVIC_InitStructure.NVIC_IRQChannel = _itUSART.NVIC_IRQChannel;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
-			_ITUSARTx.PreemptionPriority;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = _ITUSARTx.SubPriority;
+			_itUSART.PreemptionPriority;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = _itUSART.SubPriority;
 	NVIC_Init(&NVIC_InitStructure);
 
 	if (mode == Mode_DMA) {
-		NVIC_InitStructure.NVIC_IRQChannel = _ITDMAxRx.NVIC_IRQChannel;
+		NVIC_InitStructure.NVIC_IRQChannel = _itDMARx.NVIC_IRQChannel;
 		NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
-				_ITDMAxRx.PreemptionPriority;
-		NVIC_InitStructure.NVIC_IRQChannelSubPriority = _ITDMAxRx.SubPriority;
+				_itDMARx.PreemptionPriority;
+		NVIC_InitStructure.NVIC_IRQChannelSubPriority = _itDMARx.SubPriority;
 		NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 		NVIC_Init(&NVIC_InitStructure);
 
-		NVIC_InitStructure.NVIC_IRQChannel = _ITDMAxTx.NVIC_IRQChannel;
+		NVIC_InitStructure.NVIC_IRQChannel = _itDMATx.NVIC_IRQChannel;
 		NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
-				_ITDMAxTx.PreemptionPriority;
-		NVIC_InitStructure.NVIC_IRQChannelSubPriority = _ITDMAxTx.SubPriority;
+				_itDMATx.PreemptionPriority;
+		NVIC_InitStructure.NVIC_IRQChannelSubPriority = _itDMATx.SubPriority;
 		NVIC_Init(&NVIC_InitStructure);
 		//串口发送接收的DMA功能
 		USART_DMACmd(_USARTx, USART_DMAReq_Tx, ENABLE);
@@ -414,18 +410,6 @@ void UUSART::ITInit(Mode_Typedef mode) {
  */
 void UUSART::DMAInit() {
 	DMA_InitTypeDef DMA_InitStructure;
-
-	_DMARxBuf.size = _RxBuf.size;
-	if (_DMARxBuf.data != 0) {
-		delete[] _DMARxBuf.data;
-	}
-	_DMARxBuf.data = new uint8_t[_DMARxBuf.size];
-
-	_DMATxBuf.size = _TxBuf.size;
-	if (_DMATxBuf.data != 0) {
-		delete[] _DMATxBuf.data;
-	}
-	_DMATxBuf.data = new uint8_t[_DMATxBuf.size];
 
 	//开启DMA时钟
 	DMARCCInit();
@@ -451,9 +435,9 @@ void UUSART::DMAInit() {
 
 	DMA_DeInit(_DMAy_Channelx_Rx);
 	DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t) (&_USARTx->DR);
-	DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t) _DMARxBuf.data;
+	DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t) _dmaRxBuf.data;
 	DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;
-	DMA_InitStructure.DMA_BufferSize = _DMARxBuf.size;
+	DMA_InitStructure.DMA_BufferSize = _dmaRxBuf.size;
 	DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
 	DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
 	DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
@@ -493,11 +477,11 @@ Status_Typedef UUSART::DMASend(uint8_t *&data, uint16_t &len,
 		//长度减去已发送长度
 		len = uint16_t(len - copySize);
 
-		if (!_DMATxBusy) {
+		if (!_dmaTxBusy) {
 			//DMA发送空闲，发送新的缓冲
-			_DMATxBusy = true;
+			_dmaTxBusy = true;
 
-			if (_RS485Status == RS485Status_Enable) {
+			if (_rs485Status == RS485Status_Enable) {
 				RS485DirCtl(RS485Dir_Tx);
 			}
 
@@ -515,8 +499,8 @@ Status_Typedef UUSART::DMASend(uint8_t *&data, uint16_t &len,
 }
 
 bool UUSART::IsBusy() {
-	if (_Mode == Mode_DMA) {
-		return _DMATxBusy;
+	if (_mode == Mode_DMA) {
+		return _dmaTxBusy;
 	} else {
 		//暂时没有中断自动重发的预定
 		return true;

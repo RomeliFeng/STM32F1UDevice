@@ -17,7 +17,7 @@ class UUSART: public UStream {
 public:
 
 	enum Mode_Typedef {
-		Mode_Interrupt, Mode_DMA
+		Mode_Normal, Mode_DMA
 	};
 
 	enum RS485Status_Typedef {
@@ -31,12 +31,12 @@ public:
 	voidFun ReceiveEvent;
 
 	UUSART(uint16_t rxBufSize, uint16_t txBufSize, USART_TypeDef* USARTx,
-			UIT_Typedef itUSARTX);
+			UIT_Typedef& itUSART);
 	UUSART(uint16_t rxBufSize, uint16_t txBufSize, USART_TypeDef* USARTx,
-			UIT_Typedef itUSARTx, DMA_TypeDef* DMAx,
+			UIT_Typedef& itUSART, DMA_TypeDef* DMAx,
 			DMA_Channel_TypeDef* DMAy_Channelx_Rx,
-			DMA_Channel_TypeDef* DMAy_Channelx_Tx, UIT_Typedef itDMAxRx,
-			UIT_Typedef itDMAxTx);
+			DMA_Channel_TypeDef* DMAy_Channelx_Tx, UIT_Typedef& itDMARx,
+			UIT_Typedef& itDMATx);
 	virtual ~UUSART();
 
 	void Init(uint32_t baud, uint16_t USART_Parity = USART_Parity_No,
@@ -57,27 +57,26 @@ protected:
 	DMA_TypeDef *_DMAx;
 	DMA_Channel_TypeDef *_DMAy_Channelx_Rx;
 	DMA_Channel_TypeDef *_DMAy_Channelx_Tx;
-	uint32_t _DMA_IT_TC_TX;
+	uint32_t _DMAy_IT_TCx;
 
 	virtual void USARTRCCInit() = 0;
 	virtual void DMARCCInit() = 0;
 	virtual void GPIOInit() = 0;
 	virtual void RS485DirCtl(RS485Dir_Typedef dir);
 private:
-	volatile bool _DMATxBusy = false;
+	volatile bool _dmaTxBusy = false;
 	volatile bool _newFrame = false;
-	RS485Status_Typedef _RS485Status = RS485Status_Disable;
+	RS485Status_Typedef _rs485Status = RS485Status_Disable;
 
-	UEventPool* _EPool;
+	UEventPool* _ePool;
 
-	Buffer_Typedef _DMARxBuf;
-	Buffer_Typedef _DMATxBuf;
+	UIT_Typedef _itUSART;
+	UIT_Typedef _itDMARx;
+	UIT_Typedef _itDMATx;
 
-	UIT_Typedef _ITUSARTx;
-	UIT_Typedef _ITDMAxRx;
-	UIT_Typedef _ITDMAxTx;
+	Mode_Typedef _mode;
 
-	Mode_Typedef _Mode;
+	UUSART(USART_TypeDef* USARTx);
 
 	void CalcDMATC();
 
