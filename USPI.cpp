@@ -35,7 +35,8 @@ USPI::USPI(uint16_t txBufSize, SPI_TypeDef* SPIx, UIT_Typedef& itSPIx,
 	_DMAx = DMAx;
 	_DMAy_Channelx_Rx = DMAy_Channelx_Rx;
 	_DMAy_Channelx_Tx = DMAy_Channelx_Tx;
-	_DMAy_IT_TCx = CalcDMATC(_DMAy_Channelx_Tx);
+	_DMAy_IT_TCx_Rx = CalcDMATC(_DMAy_Channelx_Rx);
+	_DMAy_IT_TCx_Tx = CalcDMATC(_DMAy_Channelx_Tx);
 
 	_mode = Mode_DMA;
 }
@@ -46,22 +47,90 @@ USPI::~USPI() {
 void USPI::Init(uint16_t SPI_BaudRatePrescaler) {
 	GPIOInit();
 	SPIInit(SPI_BaudRatePrescaler);
-	DMAInit();
+	if (_mode == Mode_DMA) {
+		DMAInit();
+	}
 	ITInit();
 	//最后打开SPI
 	SPI_Cmd(_SPIx, ENABLE);
 }
 
-bool USPI::IsBusy() {
+Status_Typedef USPI::Write(uint8_t* data, uint16_t len, bool sync) {
+	switch (_mode) {
+	case Mode_Normal:
+		for (uint16_t i = 0; i < len; ++i) {
+			_SPIx->DR = data[i];
+			while ((_SPIx->SR & SPI_I2S_FLAG_RXNE) == 0)
+				;
+		}
+		break;
+	case Mode_DMA:
+		DMASend(data, len);
+		if (sync) {
+			while (_DMABusy)
+				;
+		}
+		break;
+	default:
+		break;
+	}
+	return Status_Ok;
+}
 
+Status_Typedef USPI::Write(uint8_t data, bool sync) {
+	return Write(&data, 1, sync);
+}
+
+Status_Typedef USPI::Read(uint8_t* data, uint16_t len, bool sync) {
+	switch (_mode) {
+	case Mode_Normal:
+
+		break;
+	case Mode_DMA:
+
+		break;
+	default:
+		break;
+	}
+	return Status_Ok;
+}
+
+Status_Typedef USPI::Read(uint8_t* data, bool sync) {
+	return Read(data, 1, sync);
+}
+
+bool USPI::IsBusy() {
+	if (_mode == Mode_DMA) {
+		return _DMABusy;
+	} else {
+		return false;
+	}
+}
+
+void USPI::IRQSPI() {
+}
+
+void USPI::IRQDMARx() {
+}
+
+void USPI::IRQDMATx() {
 }
 
 void USPI::GPIOInit() {
+	GPIO_InitTypeDef GPIO_InitStructure;
 
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
+
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5 | GPIO_Pin_7; //SPI CLK
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
 }
 
 void USPI::SPIInit(uint16_t SPI_BaudRatePrescaler) {
 	SPI_InitTypeDef SPI_InitStructure;
+
+	SPIRCCInit();
 
 	SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
 	SPI_InitStructure.SPI_Mode = SPI_Mode_Master;
@@ -78,6 +147,8 @@ void USPI::SPIInit(uint16_t SPI_BaudRatePrescaler) {
 
 void USPI::DMAInit() {
 	DMA_InitTypeDef DMA_InitStructure;
+
+	DMARCCInit();
 
 	DMA_DeInit(_DMAy_Channelx_Rx);
 	DMA_InitStructure.DMA_PeripheralBaseAddr = uint32_t(&_SPIx->DR);
@@ -107,23 +178,28 @@ void USPI::DMAInit() {
 void USPI::ITInit() {
 	NVIC_InitTypeDef NVIC_InitStructure;
 
-	NVIC_InitStructure.NVIC_IRQChannel = _itSPI.NVIC_IRQChannel;
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
-			_itSPI.PreemptionPriority;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = _itSPI.SubPriority;
-	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-	NVIC_Init(&NVIC_InitStructure);
+	if (_mode == Mode_Normal) {
+		NVIC_InitStructure.NVIC_IRQChannel = _itSPI.NVIC_IRQChannel;
+		NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
+				_itSPI.PreemptionPriority;
+		NVIC_InitStructure.NVIC_IRQChannelSubPriority = _itSPI.SubPriority;
+		NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+		NVIC_Init(&NVIC_InitStructure);
 
-	NVIC_InitStructure.NVIC_IRQChannel = _itDMATx.NVIC_IRQChannel;
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
-			_itDMATx.PreemptionPriority;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = _itDMATx.SubPriority;
-	NVIC_Init(&NVIC_InitStructure);
+	} else if (_mode == Mode_DMA) {
+		NVIC_InitStructure.NVIC_IRQChannel = _itDMATx.NVIC_IRQChannel;
+		NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
+				_itDMATx.PreemptionPriority;
+		NVIC_InitStructure.NVIC_IRQChannelSubPriority = _itDMATx.SubPriority;
+		NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+		NVIC_Init(&NVIC_InitStructure);
 
-	NVIC_InitStructure.NVIC_IRQChannel = _itDMARx.NVIC_IRQChannel;
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
-			_itDMARx.PreemptionPriority;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = _itDMARx.SubPriority;
-	NVIC_Init(&NVIC_InitStructure);
+		NVIC_InitStructure.NVIC_IRQChannel = _itDMARx.NVIC_IRQChannel;
+		NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
+				_itDMARx.PreemptionPriority;
+		NVIC_InitStructure.NVIC_IRQChannelSubPriority = _itDMARx.SubPriority;
+		NVIC_Init(&NVIC_InitStructure);
+	}
+
 }
 

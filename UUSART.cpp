@@ -18,13 +18,15 @@ UUSART::UUSART(uint16_t rxBufSize, uint16_t txBufSize, USART_TypeDef* USARTx,
 	_periph = Periph_USART;
 
 	_USARTx = USARTx;
+
 	_itUSART = itUSART;
 
 	//默认设置
 	_DMAx = 0;
-	_DMAy_IT_TCx = 0;
 	_DMAy_Channelx_Rx = 0;
 	_DMAy_Channelx_Tx = 0;
+	_DMAy_IT_TCx_Rx = 0;
+	_DMAy_IT_TCx_Tx = 0;
 
 	_mode = Mode_Normal;
 }
@@ -38,17 +40,16 @@ UUSART::UUSART(uint16_t rxBufSize, uint16_t txBufSize, USART_TypeDef* USARTx,
 	_periph = Periph_USART;
 
 	_USARTx = USARTx;
-	_itUSART = itUSART;
-	_itDMARx = itDMARx;
-	_itDMATx = itDMATx;
 
 	_DMAx = DMAx;
 	_DMAy_Channelx_Rx = DMAy_Channelx_Rx;
 	_DMAy_Channelx_Tx = DMAy_Channelx_Tx;
+	_DMAy_IT_TCx_Rx = CalcDMATC(_DMAy_Channelx_Rx);
+	_DMAy_IT_TCx_Tx = CalcDMATC(_DMAy_Channelx_Tx);
+
+	_itUSART = itUSART;
 	_itDMARx = itDMARx;
 	_itDMATx = itDMATx;
-
-	_DMAy_IT_TCx = CalcDMATC(_DMAy_Channelx_Tx);
 
 	_mode = Mode_DMA;
 }
@@ -71,9 +72,7 @@ void UUSART::Init(uint32_t baud, uint16_t USART_Parity,
 	//GPIO初始化
 	GPIOInit();
 	//如果有流控引脚，使用切换为接受模式
-	if (_rs485Status == RS485Status_Enable) {
-		RS485DirCtl(RS485Dir_Rx);
-	}
+	RS485StatusCtl(RS485Dir_Rx);
 	//USART外设初始化
 	USARTInit(baud, USART_Parity);
 	if (_mode == Mode_DMA) {
@@ -94,34 +93,33 @@ void UUSART::Init(uint32_t baud, uint16_t USART_Parity,
  * return Status_Typedef
  */
 Status_Typedef UUSART::Write(uint8_t* data, uint16_t len, bool sync) {
-	if (_mode == Mode_Normal) {
-		//普通模式
-
-		while (len--) {
-			_USARTx->DR = (*data++ & (uint16_t) 0x01FF);
+	if (len == 0) {
+		//发送的字节数为0
+		return Status_Error;
+	}
+	//发送前置为发送状态
+	RS485StatusCtl(RS485Dir_Tx);
+	switch (_mode) {
+	case Mode_Normal:
+		for (uint16_t i = 0; i < len; ++i) {
+			_USARTx->DR = (data[i] & (uint16_t) 0x01FF);
 			while ((_USARTx->SR & USART_FLAG_TXE) == RESET)
 				;
 		}
-	} else if (_mode == Mode_DMA) {
-		//DMA模式
-		while (len != 0) {
-			if ((_DMAy_Channelx_Tx->CMAR != (uint32_t) _txBuf.data)
-					&& (_txBuf.size - _txBuf.end != 0)) {
-				//若缓冲区1空闲，并且有空闲空间
-				DMASend(data, len, _txBuf);
-			} else if ((_DMAy_Channelx_Tx->CMAR != (uint32_t) _txBuf2.data)
-					&& (_txBuf2.size - _txBuf2.end != 0)) {
-				//若缓冲区2空闲，并且有空闲空间
-				DMASend(data, len, _txBuf2);
-			} else {
-				//发送繁忙，两个缓冲区均在使用或已满
-				//FIXME@romeli 需要添加超时返回代码
-			}
-		}
-		if(sync){
+		//发送完取消发送
+		RS485StatusCtl(RS485Dir_Rx);
+		break;
+	case Mode_DMA:
+		//DMA模式 485会在中断中自动置位
+		DMASend(data, len);
+		if (sync) {
 			//同步发送模式，等待发送结束
-			while(_dmaTxBusy);
+			while (_DMABusy)
+				;
 		}
+		break;
+	default:
+		break;
 	}
 	return Status_Ok;
 }
@@ -143,7 +141,7 @@ bool UUSART::CheckFrame() {
 
 bool UUSART::IsBusy() {
 	if (_mode == Mode_DMA) {
-		return _dmaTxBusy;
+		return _DMABusy;
 	} else {
 		//暂时没有中断自动重发的预定
 		return true;
@@ -218,7 +216,7 @@ Status_Typedef UUSART::IRQDMATx() {
 	//暂时关闭DMA发送
 	_DMAy_Channelx_Tx->CCR &= (uint16_t) (~DMA_CCR1_EN);
 
-	_DMAx->IFCR = _DMAy_IT_TCx;
+	_DMAx->IFCR = _DMAy_IT_TCx_Tx;
 
 	//判断当前使用的缓冲通道
 	if (_DMAy_Channelx_Tx->CMAR == (uint32_t) _txBuf.data) {
@@ -236,7 +234,7 @@ Status_Typedef UUSART::IRQDMATx() {
 		} else {
 			_DMAy_Channelx_Tx->CMAR = 0;
 			//无数据需要发送，清除发送队列忙标志
-			_dmaTxBusy = false;
+			_DMABusy = false;
 		}
 	} else if (_DMAy_Channelx_Tx->CMAR == (uint32_t) _txBuf2.data) {
 		//缓冲区2发送完成，置位指针
@@ -253,18 +251,14 @@ Status_Typedef UUSART::IRQDMATx() {
 		} else {
 			_DMAy_Channelx_Tx->CMAR = 0;
 			//无数据需要发送，清除发送队列忙标志
-			_dmaTxBusy = false;
+			_DMABusy = false;
 		}
 	} else {
 		//缓冲区号错误?不应发生
 		return Status_Error;
 	}
 
-	if (_rs485Status == RS485Status_Enable) {
-		while ((_USARTx->SR & USART_FLAG_TC) == RESET)
-			;
-		RS485DirCtl(RS485Dir_Rx);
-	}
+	RS485StatusCtl(RS485Dir_Rx);
 	return Status_Ok;
 }
 
@@ -418,50 +412,19 @@ void UUSART::DMAInit() {
 	DMA_Cmd(_DMAy_Channelx_Rx, ENABLE);
 }
 
-/*
- * author Romeli
- * explain 使用DMA发送数据（数据长度为使用的缓冲区的剩余空间大小）
- * param1 data 指向数据的指针的引用 NOTE @Romeli 这里使用的指针的引用，用于发送数据后移动指针位置
- * param2 len 数据长度的引用
- * param3 txBuf 使用的缓冲区的引用
- * return Status_Typedef
- */
-Status_Typedef UUSART::DMASend(uint8_t *&data, uint16_t &len,
-		Buffer_Typedef &txBuf) {
-	uint16_t avaSize, copySize;
-	if (len != 0) {
-		//置位忙标志，防止计算中DMA自动加载发送缓冲
-		txBuf.busy = true;
-		//计算缓冲区空闲空间大小
-		avaSize = uint16_t(txBuf.size - txBuf.end);
-		//计算可以发送的字节大小
-		copySize = avaSize < len ? avaSize : len;
-		//拷贝字节到缓冲区
-		memcpy(txBuf.data + txBuf.end, data, copySize);
-		//偏移发送缓冲区的末尾
-		txBuf.end = uint16_t(txBuf.end + copySize);
-		//偏移掉已发送字节
-		data += copySize;
-		//长度减去已发送长度
-		len = uint16_t(len - copySize);
-
-		if (!_dmaTxBusy) {
-			//DMA发送空闲，发送新的缓冲
-			_dmaTxBusy = true;
-
-			if (_rs485Status == RS485Status_Enable) {
-				RS485DirCtl(RS485Dir_Tx);
-			}
-
-			//设置DMA地址
-			_DMAy_Channelx_Tx->CMAR = (uint32_t) txBuf.data;
-			_DMAy_Channelx_Tx->CNDTR = txBuf.end;
-
-			//使能DMA开始发送
-			_DMAy_Channelx_Tx->CCR |= DMA_CCR1_EN;
+void UUSART::RS485StatusCtl(RS485Dir_Typedef dir) {
+	if (_rs485Status == RS485Status_Enable) {
+		switch (dir) {
+		case RS485Dir_Rx:
+			while ((_USARTx->SR & USART_FLAG_TC) == RESET)
+				;
+			RS485DirCtl(RS485Dir_Rx);
+			break;
+		case RS485Dir_Tx:
+			RS485DirCtl(RS485Dir_Tx);
+			break;
+		default:
+			break;
 		}
-		//解除忙标志
-		txBuf.busy = false;
 	}
-	return Status_Ok;
 }

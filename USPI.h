@@ -10,7 +10,7 @@
 
 #include <Communication/UStream.h>
 
-class USPI: UStream {
+class USPI: public UStream {
 public:
 	USPI(uint16_t txBufSize, SPI_TypeDef* SPIx, UIT_Typedef& itSPIx);
 	USPI(uint16_t txBufSize, SPI_TypeDef* SPIx, UIT_Typedef& itSPIx,
@@ -19,20 +19,29 @@ public:
 			UIT_Typedef& itDMATx);
 	virtual ~USPI();
 
-	void Init(uint16_t  SPI_BaudRatePrescaler);
+	void Init(uint16_t SPI_BaudRatePrescaler);
+
+	Status_Typedef Write(uint8_t* data, uint16_t len, bool sync = false)
+			override;
+	Status_Typedef Write(uint8_t data, bool sync = false) override;
+
+	Status_Typedef Read(uint8_t* data, uint16_t len, bool sync = false)
+			override;
+	Status_Typedef Read(uint8_t* data, bool sync = false) override;
 
 	virtual bool IsBusy() override;
+
+	void IRQSPI();
+	void IRQDMARx();
+	void IRQDMATx();
 protected:
 	SPI_TypeDef* _SPIx;
 	UIT_Typedef _itSPI, _itDMATx, _itDMARx;
-	DMA_TypeDef* _DMAx;
-	DMA_Channel_TypeDef* _DMAy_Channelx_Rx;
-	DMA_Channel_TypeDef* _DMAy_Channelx_Tx;
-	uint32_t _DMAy_IT_TCx;
 
 	virtual void GPIOInit() = 0;
 	virtual void SPIRCCInit() = 0;
 	virtual void SPIInit(uint16_t SPI_BaudRatePrescaler);
+	virtual void DMARCCInit() = 0;
 	void DMAInit();
 	void ITInit();
 };

@@ -48,12 +48,7 @@ public:
 	Status_Typedef IRQDMATx();
 protected:
 	USART_TypeDef* _USARTx;
-	DMA_TypeDef* _DMAx;
-	DMA_Channel_TypeDef* _DMAy_Channelx_Rx;
-	DMA_Channel_TypeDef* _DMAy_Channelx_Tx;
-	uint32_t _DMAy_IT_TCx;
 
-	volatile bool _dmaTxBusy = false;
 	volatile bool _newFrame = false;
 	RS485Status_Typedef _rs485Status = RS485Status_Disable;
 
@@ -63,12 +58,12 @@ protected:
 	virtual void DMARCCInit() = 0;
 	virtual void GPIOInit() = 0;
 	virtual void RS485DirCtl(RS485Dir_Typedef dir);
+
 	void USARTInit(uint32_t baud, uint16_t USART_Parity);
 	void ITInit(Mode_Typedef mode);
 	void DMAInit();
 
-	Status_Typedef DMASend(uint8_t *&data, uint16_t &len,
-			Buffer_Typedef &txBuf);
+	void RS485StatusCtl(RS485Dir_Typedef dir);
 };
 
 #endif /* UUSART_H_ */
