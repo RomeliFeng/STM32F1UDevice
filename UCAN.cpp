@@ -16,7 +16,7 @@ UCAN::UCAN(uint8_t rxBufSize, CAN_TypeDef* CANx, UIT_Typedef& it) {
 	_it = it;
 
 	_rxBufSize = rxBufSize;
-	_rxBuf = new Data_Typedef[_rxBufSize]();
+	_rxBuf = new Data_Typedef[_rxBufSize];
 	_rxBufStart = 0;
 	_rxBufEnd = 0;
 }
