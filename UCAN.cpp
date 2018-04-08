@@ -8,7 +8,7 @@
 #include <UCAN.h>
 #include <cstring>
 
-UCAN::UCAN(uint8_t rxBufSize, CAN_TypeDef* CANx, UIT_Typedef it) {
+UCAN::UCAN(uint8_t rxBufSize, CAN_TypeDef* CANx, UIT_Typedef& it) {
 	ReceiveEvent = nullptr;
 
 	_CANx = CANx;

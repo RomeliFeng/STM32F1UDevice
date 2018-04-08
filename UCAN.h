@@ -22,7 +22,7 @@ public:
 
 	UEvent ReceiveEvent;
 
-	UCAN(uint8_t rxBufSize, CAN_TypeDef* CANx, UIT_Typedef it);
+	UCAN(uint8_t rxBufSize, CAN_TypeDef* CANx, UIT_Typedef& it);
 	virtual ~UCAN();
 
 	void Init(uint16_t idH, uint16_t idL, uint16_t maskIdH, uint16_t maskIdL,
