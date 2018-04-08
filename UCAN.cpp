@@ -25,11 +25,11 @@ UCAN::~UCAN() {
 	delete[] _rxBuf;
 }
 
-void UCAN::Init(uint16_t idH, uint16_t idL, uint16_t maskIdH,
-		uint16_t maskIdL) {
+void UCAN::Init(uint16_t idH, uint16_t idL, uint16_t maskIdH, uint16_t maskIdL,
+		uint8_t CAN_SJW, uint8_t CAN_BS1, uint8_t CAN_BS2, uint16_t prescaler) {
 	GPIOInit();
 	NVICInit();
-	CANInit(idH, idL, maskIdH, maskIdL);
+	CANInit(idH, idL, maskIdH, maskIdL, CAN_SJW, CAN_BS1, CAN_BS2, prescaler);
 }
 
 void UCAN::Send(Data_Typedef& data) {
@@ -127,7 +127,8 @@ void UCAN::NVICInit() {
 }
 
 void UCAN::CANInit(uint16_t idH, uint16_t idL, uint16_t maskIdH,
-		uint16_t maskIdL) {
+		uint16_t maskIdL, uint8_t CAN_SJW, uint8_t CAN_BS1, uint8_t CAN_BS2,
+		uint16_t prescaler) {
 	CAN_InitTypeDef CAN_InitStructure;
 	CAN_FilterInitTypeDef CAN_FilterInitStructure;
 
@@ -143,10 +144,10 @@ void UCAN::CANInit(uint16_t idH, uint16_t idL, uint16_t maskIdH,
 	CAN_InitStructure.CAN_RFLM = DISABLE; // 报文不锁定，新的覆盖旧的
 	CAN_InitStructure.CAN_TXFP = DISABLE; // 优先级由报文标识符决定
 	CAN_InitStructure.CAN_Mode = CAN_Mode_Normal; // 模式设置 0:普通模式, 1:换回模式
-	CAN_InitStructure.CAN_SJW = CAN_SJW_1tq; // 重新同步跳跃宽度
-	CAN_InitStructure.CAN_BS1 = CAN_BS1_9tq; // 时间段1的时间单元
-	CAN_InitStructure.CAN_BS2 = CAN_BS2_8tq; // 时间段2的时间单元
-	CAN_InitStructure.CAN_Prescaler = 2; // 分频系数
+	CAN_InitStructure.CAN_SJW = CAN_SJW; // 重新同步跳跃宽度
+	CAN_InitStructure.CAN_BS1 = CAN_BS1; // 时间段1的时间单元
+	CAN_InitStructure.CAN_BS2 = CAN_BS2; // 时间段2的时间单元
+	CAN_InitStructure.CAN_Prescaler = prescaler; // 分频系数
 	CAN_Init(_CANx, &CAN_InitStructure);
 
 	CAN_FilterInitStructure.CAN_FilterNumber = 0;
