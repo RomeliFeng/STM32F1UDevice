@@ -7,6 +7,7 @@
 
 #include <UCAN.h>
 #include <cstring>
+#include <Tool/UTick.h>
 
 UCAN::UCAN(uint8_t rxBufSize, CAN_TypeDef* CANx, UIT_Typedef& it) {
 	ReceiveEvent = nullptr;
@@ -43,16 +44,22 @@ void UCAN::Send(uint32_t id, uint8_t* data, uint8_t size) {
 	memcpy(msg.Data, data, msg.DLC);
 	msg.IDE = 0;
 	msg.RTR = 0;
-	CAN_Transmit(_CANx, &msg);
+
+	while (CAN_Transmit(_CANx, &msg) == CAN_TxStatus_NoMailBox) {
+		UTick::mWait(10);
+	}
 }
 
 void UCAN::Send(uint32_t id) {
 	CanTxMsg msg;
 	msg.StdId = id;
-	msg.RTR = CAN_RTR_Remote;
-	msg.IDE = 0;
 	msg.DLC = 0;
-	CAN_Transmit(_CANx, &msg);
+	msg.RTR = 0;
+	msg.IDE = 0;
+
+	while (CAN_Transmit(_CANx, &msg) == CAN_TxStatus_NoMailBox) {
+		UTick::mWait(10);
+	}
 }
 
 void UCAN::Read(Data_Typedef& data) {
@@ -83,7 +90,8 @@ void UCAN::IRQ() {
 	_rxBuf[_rxBufEnd].dataSize = msg.DLC;
 
 	memcpy(_rxBuf[_rxBufEnd].data, msg.Data, _rxBuf[_rxBufEnd].dataSize);
-	(++_rxBufEnd) %= _rxBufSize;
+
+	_rxBufEnd = (_rxBufEnd + 1) % _rxBufSize;
 	CAN_ClearITPendingBit(_CANx, CAN_IT_FMP0); // 清除中断
 
 	if (ReceiveEvent != nullptr) {
