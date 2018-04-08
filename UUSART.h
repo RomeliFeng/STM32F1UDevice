@@ -23,8 +23,6 @@ public:
 		RS485Dir_Tx, RS485Dir_Rx
 	};
 
-	UEvent ReceivedEvent;
-
 	UUSART(uint16_t rxBufSize, uint16_t txBufSize, USART_TypeDef* USARTx,
 			UIT_Typedef& itUSART);
 	UUSART(uint16_t rxBufSize, uint16_t txBufSize, USART_TypeDef* USARTx,

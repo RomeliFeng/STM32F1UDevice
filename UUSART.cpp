@@ -416,8 +416,7 @@ void UUSART::RS485StatusCtl(RS485Dir_Typedef dir) {
 	if (_rs485Status == RS485Status_Enable) {
 		switch (dir) {
 		case RS485Dir_Rx:
-			while ((_USARTx->SR & USART_FLAG_TC) == RESET)
-				;
+			//ToDo @Romeli 转换太快会丢数，需要注意
 			RS485DirCtl(RS485Dir_Rx);
 			break;
 		case RS485Dir_Tx:
