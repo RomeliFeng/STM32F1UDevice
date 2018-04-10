@@ -145,16 +145,17 @@ void UCAN::CANInit(uint16_t idH, uint16_t idL, uint16_t maskIdH,
 
 	// 波特率 = Fpclk1/((tbs1+1+tbs2+1+1)*brp);
 	// 125K = 36000K / 16 * (8 + 9 + 1);
-	CAN_InitStructure.CAN_TTCM = DISABLE; // 非时间触发
-	CAN_InitStructure.CAN_ABOM = DISABLE; // 软件自动离线管理
-	CAN_InitStructure.CAN_AWUM = DISABLE; // 睡眠模式通过软件唤醒(清楚CAN->MCR的sleep位)
-	CAN_InitStructure.CAN_NART = ENABLE;  // 使能报文自动重发
-	CAN_InitStructure.CAN_RFLM = DISABLE; // 报文不锁定，新的覆盖旧的
-	CAN_InitStructure.CAN_TXFP = DISABLE; // 优先级由报文标识符决定
+	CAN_InitStructure.CAN_TTCM = DISABLE;   //禁用	时间触发
+	CAN_InitStructure.CAN_ABOM = ENABLE   ; //使能	软件自动离线管理
+
+	CAN_InitStructure.CAN_AWUM = DISABLE;   //使能	自动唤醒睡眠模式
+	CAN_InitStructure.CAN_NART = DISABLE;   //禁用	禁用报文自动重发
+	CAN_InitStructure.CAN_RFLM = DISABLE;   //禁用	 报文锁定，新的覆盖旧的
+	CAN_InitStructure.CAN_TXFP = DISABLE;   //禁用	邮箱优先级，优先级由报文标识符决定
 	CAN_InitStructure.CAN_Mode = CAN_Mode_Normal; // 模式设置 0:普通模式, 1:换回模式
-	CAN_InitStructure.CAN_SJW = CAN_SJW; // 重新同步跳跃宽度
-	CAN_InitStructure.CAN_BS1 = CAN_BS1; // 时间段1的时间单元
-	CAN_InitStructure.CAN_BS2 = CAN_BS2; // 时间段2的时间单元
+	CAN_InitStructure.CAN_SJW = CAN_SJW;   // 重新同步跳跃宽度
+	CAN_InitStructure.CAN_BS1 = CAN_BS1;   // 时间段1的时间单元
+	CAN_InitStructure.CAN_BS2 = CAN_BS2;   // 时间段2的时间单元
 	CAN_InitStructure.CAN_Prescaler = prescaler; // 分频系数
 	CAN_Init(_CANx, &CAN_InitStructure);
 
