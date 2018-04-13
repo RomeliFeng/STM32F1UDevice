@@ -6,9 +6,9 @@
  */
 
 #include <Tool/UTick.h>
-#include <UHC595Base.h>
+#include <U74HC595.h>
 
-UHC595Base::UHC595Base() {
+U74HC595::U74HC595() {
 }
 
 /*
@@ -16,7 +16,7 @@ UHC595Base::UHC595Base() {
  * explain 初始化74HC595接口
  * return void
  */
-void UHC595Base::Init() {
+void U74HC595::Init() {
 	GPIOInit();
 	Disable();
 }
@@ -28,7 +28,7 @@ void UHC595Base::Init() {
  * param len 欲写入数据长度
  * return void
  */
-void UHC595Base::Write(uint8_t* data, uint8_t& len) {
+void U74HC595::Write(uint8_t* data, uint8_t& len) {
 	WritePin_STCP(false);
 	UTick::Tick(1);
 	for (int16_t i = len - 1; i >= 0; --i) {
@@ -54,7 +54,7 @@ void UHC595Base::Write(uint8_t* data, uint8_t& len) {
  * explain 使能输出
  * return void
  */
-inline void UHC595Base::Enable() {
+inline void U74HC595::Enable() {
 	//低电平使能
 	WritePin_OE(false);
 }
@@ -64,7 +64,7 @@ inline void UHC595Base::Enable() {
  * explain 禁用输出
  * return void
  */
-inline void UHC595Base::Disable() {
+inline void U74HC595::Disable() {
 	//高电平禁用
 	WritePin_OE(true);
 }
@@ -74,7 +74,7 @@ inline void UHC595Base::Disable() {
  * explain 初始化使用到的GPIO（须在派生类中实现）
  * return void
  */
-void UHC595Base::GPIOInit() {
+void U74HC595::GPIOInit() {
 }
 
 /*
@@ -82,7 +82,7 @@ void UHC595Base::GPIOInit() {
  * explain 控制DS引脚（须在派生类中实现，需要内联）
  * return void
  */
-inline void UHC595Base::WritePin_DS(bool state) {
+inline void U74HC595::WritePin_DS(bool state) {
 }
 
 /*
@@ -90,7 +90,7 @@ inline void UHC595Base::WritePin_DS(bool state) {
  * explain 控制OE引脚（须在派生类中实现，需要内联）
  * return void
  */
-inline void UHC595Base::WritePin_OE(bool state) {
+inline void U74HC595::WritePin_OE(bool state) {
 }
 
 /*
@@ -98,7 +98,7 @@ inline void UHC595Base::WritePin_OE(bool state) {
  * explain 控制STCP引脚（须在派生类中实现，需要内联）
  * return void
  */
-inline void UHC595Base::WritePin_STCP(bool state) {
+inline void U74HC595::WritePin_STCP(bool state) {
 }
 
 /*
@@ -106,5 +106,5 @@ inline void UHC595Base::WritePin_STCP(bool state) {
  * explain 控制SHCP引脚（须在派生类中实现，需要内联）
  * return void
  */
-inline void UHC595Base::WritePin_SHCP(bool state) {
+inline void U74HC595::WritePin_SHCP(bool state) {
 }

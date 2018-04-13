@@ -5,14 +5,14 @@
  *      Author: Romeli
  */
 
-#ifndef UHC595BASE_H_
-#define UHC595BASE_H_
+#ifndef U74HC595_H_
+#define U74HC595_H_
 
 #include <cmsis_device.h>
 
-class UHC595Base {
+class U74HC595 {
 public:
-	UHC595Base();
+	U74HC595();
 	void Init();
 	void Write(uint8_t* data, uint8_t& len);
 
@@ -26,4 +26,4 @@ protected:
 	virtual inline void WritePin_SHCP(bool state) = 0;
 };
 
-#endif /* UHC595BASE_H_ */
+#endif /* U74HC595_H_ */

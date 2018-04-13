@@ -6,9 +6,9 @@
  */
 
 #include <Tool/UTick.h>
-#include <UHC165Base.h>
+#include <U74HC165.h>
 
-UHC165Base::UHC165Base() {
+U74HC165::U74HC165() {
 }
 
 /*
@@ -16,7 +16,7 @@ UHC165Base::UHC165Base() {
  * explain 初始化74HC165接口
  * return void
  */
-void UHC165Base::Init() {
+void U74HC165::Init() {
 	GPIOInit();
 }
 
@@ -27,7 +27,7 @@ void UHC165Base::Init() {
  * param len 欲读取数据长度
  * return void
  */
-void UHC165Base::Read(uint8_t* data, uint8_t& len) {
+void U74HC165::Read(uint8_t* data, uint8_t& len) {
 	//发送一个低电平脉冲载入电平
 	WritePin_PL(false);
 	UTick::Tick(4);
@@ -59,7 +59,7 @@ void UHC165Base::Read(uint8_t* data, uint8_t& len) {
  * explain 初始化使用到的GPIO（须在派生类中实现）
  * return void
  */
-void UHC165Base::GPIOInit() {
+void U74HC165::GPIOInit() {
 }
 
 /*
@@ -67,7 +67,7 @@ void UHC165Base::GPIOInit() {
  * explain 控制PL引脚（须在派生类中实现，需要内联）
  * return void
  */
-inline void UHC165Base::WritePin_PL(bool state) {
+inline void U74HC165::WritePin_PL(bool state) {
 }
 
 /*
@@ -75,7 +75,7 @@ inline void UHC165Base::WritePin_PL(bool state) {
  * explain 控制CE引脚（须在派生类中实现，需要内联）
  * return void
  */
-inline void UHC165Base::WritePin_CE(bool state) {
+inline void U74HC165::WritePin_CE(bool state) {
 }
 
 /*
@@ -83,7 +83,7 @@ inline void UHC165Base::WritePin_CE(bool state) {
  * explain 控制CP引脚（须在派生类中实现，需要内联）
  * return void
  */
-inline void UHC165Base::WritePin_CP(bool state) {
+inline void U74HC165::WritePin_CP(bool state) {
 }
 
 /*
@@ -91,6 +91,6 @@ inline void UHC165Base::WritePin_CP(bool state) {
  * explain 读取引脚（须在派生类中实现，需要内联）
  * return void
  */
-inline bool UHC165Base::ReadPin_DS() {
+inline bool U74HC165::ReadPin_DS() {
 	return true;
 }
