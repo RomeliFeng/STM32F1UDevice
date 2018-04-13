@@ -638,6 +638,7 @@ void UStepMotor::SetSpeed(uint16_t speed) {
 	if (speed <= 150) {
 		//Error @Romeli 过低的速度，不应该发生
 		UDebugOut("Under speed show be disappear");
+		return;
 	}
 	_TIMx->ARR = (uint16_t) (_TIMy_FRQ / speed);
 	*_TIMx_CCRx = (uint16_t) (_TIMx->ARR >> 1);
