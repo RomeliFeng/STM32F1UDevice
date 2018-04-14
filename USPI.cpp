@@ -20,9 +20,9 @@ USPI::USPI(uint16_t txBufSize, SPI_TypeDef* SPIx, UIT_Typedef& itSPIx) :
 }
 
 USPI::USPI(uint16_t txBufSize, SPI_TypeDef* SPIx, UIT_Typedef& itSPIx,
-        DMA_TypeDef* DMAx, DMA_Channel_TypeDef* DMAy_Channelx_Rx,
-        DMA_Channel_TypeDef* DMAy_Channelx_Tx, UIT_Typedef& itDMARx,
-        UIT_Typedef& itDMATx) :
+		DMA_TypeDef* DMAx, DMA_Channel_TypeDef* DMAy_Channelx_Rx,
+		DMA_Channel_TypeDef* DMAy_Channelx_Tx, UIT_Typedef& itDMARx,
+		UIT_Typedef& itDMATx) :
 		UStream(0, txBufSize, 0, txBufSize) {
 	DataForRead = 0xff;
 	//DMA模式，不需要接收缓冲，打开双发送缓冲
@@ -83,7 +83,7 @@ Status_Typedef USPI::Read(uint8_t* data, uint16_t len, bool sync) {
 	switch (_mode) {
 	case Mode_Normal:
 		for (uint16_t i = 0; i < len; ++i) {
-			_SPIx->DR = 0xff;
+			_SPIx->DR = DataForRead;
 			while ((_SPIx->SR & SPI_I2S_FLAG_RXNE) == 0)
 				;
 			data[i] = _SPIx->DR;
@@ -186,7 +186,7 @@ void USPI::ITInit() {
 	if (_mode == Mode_Normal) {
 		NVIC_InitStructure.NVIC_IRQChannel = _itSPI.NVIC_IRQChannel;
 		NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
-		        _itSPI.PreemptionPriority;
+				_itSPI.PreemptionPriority;
 		NVIC_InitStructure.NVIC_IRQChannelSubPriority = _itSPI.SubPriority;
 		NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 		NVIC_Init(&NVIC_InitStructure);
@@ -194,14 +194,14 @@ void USPI::ITInit() {
 	} else if (_mode == Mode_DMA) {
 		NVIC_InitStructure.NVIC_IRQChannel = _itDMATx.NVIC_IRQChannel;
 		NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
-		        _itDMATx.PreemptionPriority;
+				_itDMATx.PreemptionPriority;
 		NVIC_InitStructure.NVIC_IRQChannelSubPriority = _itDMATx.SubPriority;
 		NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 		NVIC_Init(&NVIC_InitStructure);
 
 		NVIC_InitStructure.NVIC_IRQChannel = _itDMARx.NVIC_IRQChannel;
 		NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
-		        _itDMARx.PreemptionPriority;
+				_itDMARx.PreemptionPriority;
 		NVIC_InitStructure.NVIC_IRQChannelSubPriority = _itDMARx.SubPriority;
 		NVIC_Init(&NVIC_InitStructure);
 	}
