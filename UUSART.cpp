@@ -114,7 +114,7 @@ Status_Typedef UUSART::Write(uint8_t* data, uint16_t len, bool sync) {
 		DMASend(data, len);
 		if (sync) {
 			//同步发送模式，等待发送结束
-			while (_DMABusy)
+			while (_DMATxBusy)
 				;
 		}
 		break;
@@ -141,7 +141,7 @@ bool UUSART::CheckFrame() {
 
 bool UUSART::IsBusy() {
 	if (_mode == Mode_DMA) {
-		return _DMABusy;
+		return _DMATxBusy;
 	} else {
 		//暂时没有中断自动重发的预定
 		return true;
@@ -153,7 +153,7 @@ bool UUSART::IsBusy() {
  * explain 串口接收中断
  * return Status_Typedef
  */
-Status_Typedef UUSART::IRQUSART() {
+void UUSART::IRQUSART() {
 	//读取串口标志寄存器
 	uint16_t staus = _USARTx->SR;
 	if ((staus & USART_FLAG_IDLE) != RESET) {
@@ -171,7 +171,7 @@ Status_Typedef UUSART::IRQUSART() {
 			_DMAy_Channelx_Rx->CNDTR = _rxBuf.size;
 			//循环搬运数据
 			for (uint16_t i = 0; i < len; ++i) {
-				_rxBuf.data[_rxBuf.end] = _dmaRxBuf.data[i];
+				_rxBuf.data[_rxBuf.end] = _DMARxBuf.data[i];
 				_rxBuf.end = uint16_t((_rxBuf.end + 1) % _rxBuf.size);
 			}
 			//开启DMA接收
@@ -204,7 +204,6 @@ Status_Typedef UUSART::IRQUSART() {
 		//Note @Romeli 在F0系列中IDLE等中断要手动清除
 		USART_ClearITPendingBit(_USARTx, USART_IT_ORE);
 	}
-	return Status_Ok;
 }
 
 /*
@@ -212,54 +211,9 @@ Status_Typedef UUSART::IRQUSART() {
  * explain 串口DMA发送中断
  * return Status_Typedef
  */
-Status_Typedef UUSART::IRQDMATx() {
-	//暂时关闭DMA发送
-	_DMAy_Channelx_Tx->CCR &= (uint16_t) (~DMA_CCR1_EN);
-
-	_DMAx->IFCR = _DMAy_IT_TCx_Tx;
-
-	//判断当前使用的缓冲通道
-	if (_DMAy_Channelx_Tx->CMAR == (uint32_t) _txBuf.data) {
-		//缓冲区1发送完成，置位指针
-		_txBuf.end = 0;
-		//判断缓冲区2是否有数据，并且忙标志未置位（防止填充到一半发送出去）
-		if (_txBuf2.end != 0 && _txBuf2.busy == false) {
-			//当前使用缓冲区切换为缓冲区2，并加载DMA发送
-			_DMAy_Channelx_Tx->CMAR = (uint32_t) _txBuf2.data;
-			_DMAy_Channelx_Tx->CNDTR = _txBuf2.end;
-
-			//使能DMA发送
-			_DMAy_Channelx_Tx->CCR |= DMA_CCR1_EN;
-			return Status_Ok;
-		} else {
-			_DMAy_Channelx_Tx->CMAR = 0;
-			//无数据需要发送，清除发送队列忙标志
-			_DMABusy = false;
-		}
-	} else if (_DMAy_Channelx_Tx->CMAR == (uint32_t) _txBuf2.data) {
-		//缓冲区2发送完成，置位指针
-		_txBuf2.end = 0;
-		//判断缓冲区1是否有数据，并且忙标志未置位（防止填充到一半发送出去）
-		if (_txBuf.end != 0 && _txBuf.busy == false) {
-			//当前使用缓冲区切换为缓冲区1，并加载DMA发送
-			_DMAy_Channelx_Tx->CMAR = (uint32_t) _txBuf.data;
-			_DMAy_Channelx_Tx->CNDTR = _txBuf.end;
-
-			//使能DMA发送
-			_DMAy_Channelx_Tx->CCR |= DMA_CCR1_EN;
-			return Status_Ok;
-		} else {
-			_DMAy_Channelx_Tx->CMAR = 0;
-			//无数据需要发送，清除发送队列忙标志
-			_DMABusy = false;
-		}
-	} else {
-		//缓冲区号错误?不应发生
-		return Status_Error;
-	}
-
+void UUSART::IRQDMATx() {
+	UStream::IRQDMATx();
 	RS485StatusCtl(RS485Dir_Rx);
-	return Status_Ok;
 }
 
 /*
@@ -397,9 +351,9 @@ void UUSART::DMAInit() {
 
 	DMA_DeInit(_DMAy_Channelx_Rx);
 	DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t) (&_USARTx->DR);
-	DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t) _dmaRxBuf.data;
+	DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t) _DMARxBuf.data;
 	DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;
-	DMA_InitStructure.DMA_BufferSize = _dmaRxBuf.size;
+	DMA_InitStructure.DMA_BufferSize = _DMARxBuf.size;
 	DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
 	DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
 	DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;

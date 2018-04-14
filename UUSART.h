@@ -42,8 +42,8 @@ public:
 
 	virtual bool IsBusy() override;
 
-	Status_Typedef IRQUSART();
-	Status_Typedef IRQDMATx();
+	void IRQUSART();
+	void IRQDMATx();
 protected:
 	USART_TypeDef* _USARTx;
 
