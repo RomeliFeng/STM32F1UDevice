@@ -12,6 +12,8 @@
 
 class USPI: public UStream {
 public:
+	uint8_t DataForRead;
+
 	USPI(uint16_t txBufSize, SPI_TypeDef* SPIx, UIT_Typedef& itSPIx);
 	USPI(uint16_t txBufSize, SPI_TypeDef* SPIx, UIT_Typedef& itSPIx,
 			DMA_TypeDef* DMAx, DMA_Channel_TypeDef* DMAy_Channelx_Rx,
@@ -23,17 +25,14 @@ public:
 
 	Status_Typedef Write(uint8_t* data, uint16_t len, bool sync = false)
 			override;
-	Status_Typedef Write(uint8_t data, bool sync = false) override;
 
 	Status_Typedef Read(uint8_t* data, uint16_t len, bool sync = false)
 			override;
-	Status_Typedef Read(uint8_t* data, bool sync = false) override;
 
 	virtual bool IsBusy() override;
 
 	void IRQSPI();
 	void IRQDMARx();
-	void IRQDMATx();
 protected:
 	SPI_TypeDef* _SPIx;
 	UIT_Typedef _itSPI, _itDMATx, _itDMARx;
@@ -44,6 +43,8 @@ protected:
 	virtual void DMARCCInit() = 0;
 	void DMAInit();
 	void ITInit();
+
+	void DMAReceive(uint8_t *&data, uint16_t &len) override;
 };
 
 #endif /* USPI_H_ */

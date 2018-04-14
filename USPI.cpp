@@ -9,6 +9,7 @@
 
 USPI::USPI(uint16_t txBufSize, SPI_TypeDef* SPIx, UIT_Typedef& itSPIx) :
 		UStream(0, txBufSize, 0, 0) {
+	DataForRead = 0xff;
 	//普通模式，不需要接收缓冲
 	_periph = Periph_SPI;
 
@@ -19,10 +20,11 @@ USPI::USPI(uint16_t txBufSize, SPI_TypeDef* SPIx, UIT_Typedef& itSPIx) :
 }
 
 USPI::USPI(uint16_t txBufSize, SPI_TypeDef* SPIx, UIT_Typedef& itSPIx,
-		DMA_TypeDef* DMAx, DMA_Channel_TypeDef* DMAy_Channelx_Rx,
-		DMA_Channel_TypeDef* DMAy_Channelx_Tx, UIT_Typedef& itDMARx,
-		UIT_Typedef& itDMATx) :
+        DMA_TypeDef* DMAx, DMA_Channel_TypeDef* DMAy_Channelx_Rx,
+        DMA_Channel_TypeDef* DMAy_Channelx_Tx, UIT_Typedef& itDMARx,
+        UIT_Typedef& itDMATx) :
 		UStream(0, txBufSize, 0, txBufSize) {
+	DataForRead = 0xff;
 	//DMA模式，不需要接收缓冲，打开双发送缓冲
 	_periph = Periph_SPI;
 
@@ -67,7 +69,7 @@ Status_Typedef USPI::Write(uint8_t* data, uint16_t len, bool sync) {
 	case Mode_DMA:
 		DMASend(data, len);
 		if (sync) {
-			while (_DMABusy)
+			while (_DMATxBusy)
 				;
 		}
 		break;
@@ -77,17 +79,22 @@ Status_Typedef USPI::Write(uint8_t* data, uint16_t len, bool sync) {
 	return Status_Ok;
 }
 
-Status_Typedef USPI::Write(uint8_t data, bool sync) {
-	return Write(&data, 1, sync);
-}
-
 Status_Typedef USPI::Read(uint8_t* data, uint16_t len, bool sync) {
 	switch (_mode) {
 	case Mode_Normal:
-
+		for (uint16_t i = 0; i < len; ++i) {
+			_SPIx->DR = 0xff;
+			while ((_SPIx->SR & SPI_I2S_FLAG_RXNE) == 0)
+				;
+			data[i] = _SPIx->DR;
+		}
 		break;
 	case Mode_DMA:
-
+		DMAReceive(data, len);
+		if (sync) {
+			while (_DMARxBusy)
+				;
+		}
 		break;
 	default:
 		break;
@@ -95,13 +102,9 @@ Status_Typedef USPI::Read(uint8_t* data, uint16_t len, bool sync) {
 	return Status_Ok;
 }
 
-Status_Typedef USPI::Read(uint8_t* data, bool sync) {
-	return Read(data, 1, sync);
-}
-
 bool USPI::IsBusy() {
 	if (_mode == Mode_DMA) {
-		return _DMABusy;
+		return _DMATxBusy || _DMARxBusy;
 	} else {
 		return false;
 	}
@@ -111,9 +114,11 @@ void USPI::IRQSPI() {
 }
 
 void USPI::IRQDMARx() {
-}
+	//关闭DMA接收
+	_DMAy_Channelx_Rx->CCR &= (uint16_t) (~DMA_CCR1_EN);
+	_DMAx->IFCR = _DMAy_IT_TCx_Rx;
 
-void USPI::IRQDMATx() {
+	_DMARxBusy = false;
 }
 
 void USPI::GPIOInit() {
@@ -181,7 +186,7 @@ void USPI::ITInit() {
 	if (_mode == Mode_Normal) {
 		NVIC_InitStructure.NVIC_IRQChannel = _itSPI.NVIC_IRQChannel;
 		NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
-				_itSPI.PreemptionPriority;
+		        _itSPI.PreemptionPriority;
 		NVIC_InitStructure.NVIC_IRQChannelSubPriority = _itSPI.SubPriority;
 		NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 		NVIC_Init(&NVIC_InitStructure);
@@ -189,17 +194,39 @@ void USPI::ITInit() {
 	} else if (_mode == Mode_DMA) {
 		NVIC_InitStructure.NVIC_IRQChannel = _itDMATx.NVIC_IRQChannel;
 		NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
-				_itDMATx.PreemptionPriority;
+		        _itDMATx.PreemptionPriority;
 		NVIC_InitStructure.NVIC_IRQChannelSubPriority = _itDMATx.SubPriority;
 		NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 		NVIC_Init(&NVIC_InitStructure);
 
 		NVIC_InitStructure.NVIC_IRQChannel = _itDMARx.NVIC_IRQChannel;
 		NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
-				_itDMARx.PreemptionPriority;
+		        _itDMARx.PreemptionPriority;
 		NVIC_InitStructure.NVIC_IRQChannelSubPriority = _itDMARx.SubPriority;
 		NVIC_Init(&NVIC_InitStructure);
 	}
 
 }
 
+void USPI::DMAReceive(uint8_t *&data, uint16_t &len) {
+	//如果有发送任务，等待发送任务完成
+	while (_DMATxBusy || _DMARxBusy)
+		;
+
+	_DMATxBusy = true;
+	_DMARxBusy = true;
+
+	//设置DMA地址
+	_DMAy_Channelx_Tx->CMAR = uint32_t(&DataForRead);
+	_DMAy_Channelx_Tx->CNDTR = len;
+	//设置内存地址自增
+	_DMAy_Channelx_Tx->CCR &= (~DMA_CCR1_MINC);
+
+	//设置DMA接收参数，用于接收数据
+	_DMAy_Channelx_Rx->CMAR = uint32_t(data);
+	_DMAy_Channelx_Rx->CNDTR = len;
+
+	//使能DMA开始发送
+	_DMAy_Channelx_Rx->CCR |= DMA_CCR1_EN;
+	_DMAy_Channelx_Tx->CCR |= DMA_CCR1_EN;
+}
