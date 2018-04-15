@@ -9,9 +9,10 @@
 #define UUSART_H_
 
 #include <cmsis_device.h>
-#include <Communication/UStream.h>
-#include <Event/UEventPool.h>
 #include <Misc/UMisc.h>
+#include <Communication/UStream.h>
+#include <Communication/UDMAIO.h>
+#include <Event/UEventPool.h>
 
 class UUSART: public UStream {
 public:
@@ -50,7 +51,7 @@ protected:
 	volatile bool _newFrame = false;
 	RS485Status_Typedef _rs485Status = RS485Status_Disable;
 
-	UIT_Typedef _itUSART, _itDMARx, _itDMATx;
+	UIT_Typedef _itUSART;
 
 	virtual void USARTRCCInit() = 0;
 	virtual void DMARCCInit() = 0;

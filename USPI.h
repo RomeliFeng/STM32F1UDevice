@@ -9,8 +9,9 @@
 #define USPI_H_
 
 #include <Communication/UStream.h>
+#include <Communication/UDMAIO.h>
 
-class USPI: public UStream {
+class USPI: public UStream, public UDMAIO {
 public:
 	uint8_t DataForRead;
 

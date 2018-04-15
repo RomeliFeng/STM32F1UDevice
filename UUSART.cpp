@@ -14,19 +14,12 @@
 
 UUSART::UUSART(uint16_t rxBufSize, uint16_t txBufSize, USART_TypeDef* USARTx,
 		UIT_Typedef& itUSART) :
-		UStream(rxBufSize, txBufSize, 0, 0) {
+		UStream(rxBufSize) {
 	_periph = Periph_USART;
 
 	_USARTx = USARTx;
 
 	_itUSART = itUSART;
-
-	//默认设置
-	_DMAx = 0;
-	_DMAy_Channelx_Rx = 0;
-	_DMAy_Channelx_Tx = 0;
-	_DMAy_IT_TCx_Rx = 0;
-	_DMAy_IT_TCx_Tx = 0;
 
 	_mode = Mode_Normal;
 }
@@ -36,20 +29,13 @@ UUSART::UUSART(uint16_t rxBufSize, uint16_t txBufSize, USART_TypeDef* USARTx,
 		DMA_Channel_TypeDef* DMAy_Channelx_Rx,
 		DMA_Channel_TypeDef* DMAy_Channelx_Tx, UIT_Typedef& itDMARx,
 		UIT_Typedef& itDMATx) :
-		UStream(rxBufSize, txBufSize, rxBufSize, txBufSize) {
+		UStream(rxBufSize, txBufSize, DMAx, DMAy_Channelx_Rx, DMAy_Channelx_Tx,
+				itDMARx, itDMATx) {
 	_periph = Periph_USART;
 
 	_USARTx = USARTx;
 
-	_DMAx = DMAx;
-	_DMAy_Channelx_Rx = DMAy_Channelx_Rx;
-	_DMAy_Channelx_Tx = DMAy_Channelx_Tx;
-	_DMAy_IT_TCx_Rx = CalcDMATC(_DMAy_Channelx_Rx);
-	_DMAy_IT_TCx_Tx = CalcDMATC(_DMAy_Channelx_Tx);
-
 	_itUSART = itUSART;
-	_itDMARx = itDMARx;
-	_itDMATx = itDMATx;
 
 	_mode = Mode_DMA;
 }
@@ -163,16 +149,16 @@ void UUSART::IRQUSART() {
 			//关闭DMA接收
 			_DMAy_Channelx_Rx->CCR &= (uint16_t) (~DMA_CCR1_EN);
 
-			uint16_t len = uint16_t(_rxBuf.size - _DMAy_Channelx_Rx->CNDTR);
+			uint16_t len = uint16_t(_rxBuf.Size - _DMAy_Channelx_Rx->CNDTR);
 			//清除DMA标志
 //			_DMAx->IFCR = DMA1_FLAG_GL3 | DMA1_FLAG_TC3 | DMA1_FLAG_TE3
 //					| DMA1_FLAG_HT3;
 			//复位DMA接收区大小
-			_DMAy_Channelx_Rx->CNDTR = _rxBuf.size;
+			_DMAy_Channelx_Rx->CNDTR = _rxBuf.Size;
 			//循环搬运数据
 			for (uint16_t i = 0; i < len; ++i) {
-				_rxBuf.data[_rxBuf.end] = _DMARxBuf.data[i];
-				_rxBuf.end = uint16_t((_rxBuf.end + 1) % _rxBuf.size);
+				_rxBuf.Data[_rxBuf.End] = _DMARxBuf.Data[i];
+				_rxBuf.End = uint16_t((_rxBuf.End + 1) % _rxBuf.Size);
 			}
 			//开启DMA接收
 			_DMAy_Channelx_Rx->CCR |= DMA_CCR1_EN;
@@ -194,8 +180,8 @@ void UUSART::IRQUSART() {
 	//串口字节接收中断置位
 	if ((staus & USART_FLAG_RXNE) != RESET) {
 		//搬运数据到缓冲区
-		_rxBuf.data[_rxBuf.end] = uint8_t(_USARTx->DR);
-		_rxBuf.end = uint16_t((_rxBuf.end + 1) % _rxBuf.size);
+		_rxBuf.Data[_rxBuf.End] = uint8_t(_USARTx->DR);
+		_rxBuf.End = uint16_t((_rxBuf.End + 1) % _rxBuf.Size);
 	}
 #endif
 	//串口帧错误中断
@@ -212,7 +198,7 @@ void UUSART::IRQUSART() {
  * return Status_Typedef
  */
 void UUSART::IRQDMATx() {
-	UStream::IRQDMATx();
+	IRQDMATx();
 	RS485StatusCtl(RS485Dir_Rx);
 }
 
@@ -295,17 +281,17 @@ void UUSART::ITInit(Mode_Typedef mode) {
 	NVIC_Init(&NVIC_InitStructure);
 
 	if (mode == Mode_DMA) {
-		NVIC_InitStructure.NVIC_IRQChannel = _itDMARx.NVIC_IRQChannel;
+		NVIC_InitStructure.NVIC_IRQChannel = _itDMARx->NVIC_IRQChannel;
 		NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
-				_itDMARx.PreemptionPriority;
-		NVIC_InitStructure.NVIC_IRQChannelSubPriority = _itDMARx.SubPriority;
+				_itDMARx->PreemptionPriority;
+		NVIC_InitStructure.NVIC_IRQChannelSubPriority = _itDMARx->SubPriority;
 		NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 		NVIC_Init(&NVIC_InitStructure);
 
-		NVIC_InitStructure.NVIC_IRQChannel = _itDMATx.NVIC_IRQChannel;
+		NVIC_InitStructure.NVIC_IRQChannel = _itDMATx->NVIC_IRQChannel;
 		NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
-				_itDMATx.PreemptionPriority;
-		NVIC_InitStructure.NVIC_IRQChannelSubPriority = _itDMATx.SubPriority;
+				_itDMATx->PreemptionPriority;
+		NVIC_InitStructure.NVIC_IRQChannelSubPriority = _itDMATx->SubPriority;
 		NVIC_Init(&NVIC_InitStructure);
 		//串口发送接收的DMA功能
 		USART_DMACmd(_USARTx, USART_DMAReq_Tx, ENABLE);
@@ -351,9 +337,9 @@ void UUSART::DMAInit() {
 
 	DMA_DeInit(_DMAy_Channelx_Rx);
 	DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t) (&_USARTx->DR);
-	DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t) _DMARxBuf.data;
+	DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t) _DMARxBuf.Data;
 	DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;
-	DMA_InitStructure.DMA_BufferSize = _DMARxBuf.size;
+	DMA_InitStructure.DMA_BufferSize = _DMARxBuf.Size;
 	DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
 	DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
 	DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
