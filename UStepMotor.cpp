@@ -491,20 +491,18 @@ void UStepMotor::SetEnPin(FunctionalState newState) {
 /*
  * author Romeli
  * explain 获取正转限位传感器状态（建议在派生类中重写）
- * return uint32_t
+ * return bool
  */
 bool UStepMotor::GetLimit_CW() {
-	//ToDo 不应该这么写，应删除限位传感器uint32_t 改为传感器位号？？？细化为检测正传传感器 和 反转传感器触发信号
 	return false;
 }
 
 /*
  * author Romeli
  * explain 获取反转限位传感器状态（建议在派生类中重写）
- * return uint32_t
+ * return bool
  */
 bool UStepMotor::GetLimit_CCW() {
-	//ToDo 不应该这么写，应删除限位传感器uint32_t 改为传感器位号？？？细化为检测正传传感器 和 反转传感器触发信号
 	return false;
 }
 
