@@ -14,7 +14,7 @@ class U74HC595 {
 public:
 	U74HC595();
 	void Init();
-	void Write(uint8_t* data, uint8_t& len);
+	void Write(uint8_t* data, uint8_t len);
 
 	void Enable();
 	void Disable();

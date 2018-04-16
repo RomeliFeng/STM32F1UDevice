@@ -14,7 +14,7 @@ class U74HC165 {
 public:
 	U74HC165();
 	void Init();
-	void Read(uint8_t* data, uint8_t& len);
+	void Read(uint8_t* data, uint8_t len);
 
 protected:
 	virtual void GPIOInit() = 0;

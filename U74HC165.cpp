@@ -27,7 +27,7 @@ void U74HC165::Init() {
  * param len 欲读取数据长度
  * return void
  */
-void U74HC165::Read(uint8_t* data, uint8_t& len) {
+void U74HC165::Read(uint8_t* data, uint8_t len) {
 	//发送一个低电平脉冲载入电平
 	WritePin_PL(false);
 	UTick::Tick(4);

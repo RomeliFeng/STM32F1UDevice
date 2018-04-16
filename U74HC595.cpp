@@ -28,7 +28,7 @@ void U74HC595::Init() {
  * param len 欲写入数据长度
  * return void
  */
-void U74HC595::Write(uint8_t* data, uint8_t& len) {
+void U74HC595::Write(uint8_t* data, uint8_t len) {
 	WritePin_STCP(false);
 	UTick::Tick(1);
 	for (int16_t i = len - 1; i >= 0; --i) {
