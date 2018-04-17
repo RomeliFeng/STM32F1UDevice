@@ -29,22 +29,22 @@ void U74HC595::Init() {
  * return void
  */
 void U74HC595::Write(uint8_t* data, uint8_t len) {
-	WritePin_STCP(false);
+	STCP_Reset();
 	UTick::Tick(1);
 	for (int16_t i = len - 1; i >= 0; --i) {
 		for (uint8_t mask = 0x80; mask != 0; mask >>= 1) {
-			WritePin_SHCP(false);
+			SHCP_Reset();
 			UTick::Tick(1);
 			if ((mask & data[i]) != 0) {
-				WritePin_DS(true);
+				DS_Set();
 			} else {
-				WritePin_DS(false);
+				DS_Reset();
 			}
-			WritePin_SHCP(true);
+			SHCP_Set();
 			UTick::Tick(5);
 		}
 	}
-	WritePin_STCP(true);
+	STCP_Set();
 	UTick::Tick(1);
 	Enable();
 }
@@ -56,7 +56,7 @@ void U74HC595::Write(uint8_t* data, uint8_t len) {
  */
 inline void U74HC595::Enable() {
 	//低电平使能
-	WritePin_OE(false);
+	OE_Reset();
 }
 
 /*
@@ -66,45 +66,30 @@ inline void U74HC595::Enable() {
  */
 inline void U74HC595::Disable() {
 	//高电平禁用
-	WritePin_OE(true);
+	OE_Set();
 }
 
-/*
- * author Romeli
- * explain 初始化使用到的GPIO（须在派生类中实现）
- * return void
- */
-void U74HC595::GPIOInit() {
+inline void U74HC595::DS_Set() {
 }
 
-/*
- * author Romeli
- * explain 控制DS引脚（须在派生类中实现，需要内联）
- * return void
- */
-inline void U74HC595::WritePin_DS(bool state) {
+inline void U74HC595::OE_Set() {
 }
 
-/*
- * author Romeli
- * explain 控制OE引脚（须在派生类中实现，需要内联）
- * return void
- */
-inline void U74HC595::WritePin_OE(bool state) {
+inline void U74HC595::STCP_Set() {
 }
 
-/*
- * author Romeli
- * explain 控制STCP引脚（须在派生类中实现，需要内联）
- * return void
- */
-inline void U74HC595::WritePin_STCP(bool state) {
+inline void U74HC595::SHCP_Set() {
 }
 
-/*
- * author Romeli
- * explain 控制SHCP引脚（须在派生类中实现，需要内联）
- * return void
- */
-inline void U74HC595::WritePin_SHCP(bool state) {
+inline void U74HC595::DS_Reset() {
 }
+
+inline void U74HC595::OE_Reset() {
+}
+
+inline void U74HC595::STCP_Reset() {
+}
+
+inline void U74HC595::SHCP_Reset() {
+}
+

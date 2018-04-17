@@ -20,10 +20,14 @@ public:
 	void Disable();
 protected:
 	virtual void GPIOInit() = 0;
-	virtual inline void WritePin_DS(bool state) = 0;
-	virtual inline void WritePin_OE(bool state) = 0;
-	virtual inline void WritePin_STCP(bool state) = 0;
-	virtual inline void WritePin_SHCP(bool state) = 0;
+	virtual inline void DS_Set() = 0;
+	virtual inline void OE_Set() = 0;
+	virtual inline void STCP_Set() = 0;
+	virtual inline void SHCP_Set() = 0;
+	virtual inline void DS_Reset() = 0;
+	virtual inline void OE_Reset() = 0;
+	virtual inline void STCP_Reset() = 0;
+	virtual inline void SHCP_Reset() = 0;
 };
 
 #endif /* U74HC595_H_ */
