@@ -18,10 +18,13 @@ public:
 
 protected:
 	virtual void GPIOInit() = 0;
-	virtual inline void WritePin_PL(bool state) = 0;
-	virtual inline void WritePin_CE(bool state) = 0;
-	virtual inline void WritePin_CP(bool state) = 0;
-	virtual inline bool ReadPin_DS() = 0;
+	virtual inline void PL_Set() = 0;
+	virtual inline void CP_Set() = 0;
+	virtual inline void CE_Set() = 0;
+	virtual inline void PL_Reset() = 0;
+	virtual inline void CP_Reset() = 0;
+	virtual inline void CE_Reset() = 0;
+	virtual inline bool DS_Read() = 0;
 };
 
 #endif /* U74HC165_H_ */

@@ -28,69 +28,48 @@ void U74HC165::Init() {
  * return void
  */
 void U74HC165::Read(uint8_t* data, uint8_t len) {
+	CP_Reset();
 	//发送一个低电平脉冲载入电平
-	WritePin_PL(false);
+	PL_Reset();
 	UTick::Tick(4);
-	WritePin_PL(true);
-
-	WritePin_CP(false);
-	WritePin_CE(false);
-	UTick::Tick(1);
+	PL_Set();
+	CE_Reset();
 	for (int16_t i = len - 1; i >= 0; --i) {
 		for (uint8_t mask = 0x80; mask != 0; mask = mask >> 1) {
-			if (ReadPin_DS()) {
+			//回到低电平，为了下次位移
+			CP_Reset();
+			if (DS_Read()) {
 				data[i] |= mask;
-				UTick::Tick(1);
 			} else {
 				data[i] &= (~mask);
 			}
 			//在上升沿装载新的数据
-			WritePin_CP(true);
-			UTick::Tick(3);
-			//回到低电平，为了下次位移
-			WritePin_CP(false);
+			CP_Set();
+			UTick::Tick(1);
 		}
 	}
-	WritePin_CE(true);
+	CE_Set();
 }
 
-/*
- * author Romeli
- * explain 初始化使用到的GPIO（须在派生类中实现）
- * return void
- */
-void U74HC165::GPIOInit() {
+inline void U74HC165::PL_Set() {
 }
 
-/*
- * author Romeli
- * explain 控制PL引脚（须在派生类中实现，需要内联）
- * return void
- */
-inline void U74HC165::WritePin_PL(bool state) {
+inline void U74HC165::CP_Set() {
 }
 
-/*
- * author Romeli
- * explain 控制CE引脚（须在派生类中实现，需要内联）
- * return void
- */
-inline void U74HC165::WritePin_CE(bool state) {
+inline void U74HC165::CE_Set() {
 }
 
-/*
- * author Romeli
- * explain 控制CP引脚（须在派生类中实现，需要内联）
- * return void
- */
-inline void U74HC165::WritePin_CP(bool state) {
+inline void U74HC165::PL_Reset() {
 }
 
-/*
- * author Romeli
- * explain 读取引脚（须在派生类中实现，需要内联）
- * return void
- */
-inline bool U74HC165::ReadPin_DS() {
-	return true;
+inline void U74HC165::CP_Reset() {
 }
+
+inline void U74HC165::CE_Reset() {
+}
+
+inline bool U74HC165::DS_Read() {
+	return false;
+}
+
