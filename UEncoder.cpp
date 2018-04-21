@@ -92,7 +92,23 @@ void UEncoder::SetPos(int32_t pos) {
  * return int32_t 当前位置
  */
 int32_t UEncoder::GetPos() const {
-	int32_t pos = int32_t(_exCNT) * 0x10000 + _TIMx->CNT;
+	int32_t pos;
+	int32_t pos1 = int32_t(_exCNT) * 0x10000 + _TIMx->CNT;
+	int32_t pos2 = int32_t(_exCNT) * 0x10000 + _TIMx->CNT;
+	int32_t pos3 = int32_t(_exCNT) * 0x10000 + _TIMx->CNT;
+
+	if (abs(pos1 - pos2) < 0x1000) {
+		//pos3错误
+		pos = pos2;
+	} else if (abs(pos2 - pos3) < 0x1000) {
+		//pos1错误
+		pos = pos3;
+	} else if (abs(pos3 - pos1) < 0x1000) {
+		//pos2错误
+		pos = pos3;
+	} else {
+		pos = pos1;
+	}
 	return _relativeDir == Dir_Negtive ? -pos : pos;
 }
 
