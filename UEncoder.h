@@ -28,7 +28,7 @@ public:
 	void SetRelativeDir(Dir_Typedef dir);
 	void SetPos(int32_t pos);
 	//获取当前位置
-	int32_t GetPos() const;
+	int32_t GetPos();
 
 	//中断服务子函数
 	void IRQ();
@@ -41,6 +41,7 @@ protected:
 
 	UIT_Typedef _it; //中断优先级
 	volatile int16_t _exCNT;
+	volatile int32_t _pos;
 	Dir_Typedef _relativeDir;
 
 	volatile bool _sync; //中断保护用标志

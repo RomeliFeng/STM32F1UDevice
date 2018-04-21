@@ -17,7 +17,7 @@ UEncoder::UEncoder(TIM_TypeDef* TIMx, UIT_Typedef& it) {
 
 	_exCNT = 0;
 	_relativeDir = Dir_Positive;
-
+	_pos = 0;
 	_sync = false;
 
 	//自动将对象指针加入资源池
@@ -93,7 +93,7 @@ void UEncoder::SetPos(int32_t pos) {
  * explain 读取编码器当前位置
  * return int32_t 当前位置
  */
-int32_t UEncoder::GetPos() const {
+int32_t UEncoder::GetPos() {
 	int32_t pos;
 //	int32_t pos1 = int32_t(_exCNT) * 0x10000 + _TIMx->CNT;
 //	int32_t pos2 = int32_t(_exCNT) * 0x10000 + _TIMx->CNT;
@@ -112,22 +112,22 @@ int32_t UEncoder::GetPos() const {
 //		pos = pos1;
 //	}
 	while (true) {
-		_sync = false;
+		//_sync = false;
 		pos = int32_t(_exCNT) * 0x10000 + _TIMx->CNT;
-		if(!_sync){
+		if (!_sync) {
 			//取数中没有进入中断
-			if(!TIM_Get_IT_Update(_TIMx)){
+			if (!TIM_Get_IT_Update(_TIMx)) {
 				//中断标志没有置位，数据安全
 				break;
-			}else{
+			} else {
 				//有中断正在等待，执行中断函数并开始下一次取数
 				IRQ();
 			}
 		}
 		//取数中进入了中断，重新取数
 	}
-
-	return _relativeDir == Dir_Negtive ? -pos : pos;
+	_pos = _relativeDir == Dir_Negtive ? -pos : pos;
+	return _pos;
 }
 
 /*
