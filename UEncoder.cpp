@@ -112,7 +112,7 @@ int32_t UEncoder::GetPos() {
 //		pos = pos1;
 //	}
 	while (true) {
-		//_sync = false;
+		_sync = false;
 		pos = int32_t(_exCNT) * 0x10000 + _TIMx->CNT;
 		if (!_sync) {
 			//取数中没有进入中断
