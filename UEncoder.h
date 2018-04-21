@@ -43,6 +43,8 @@ protected:
 	volatile int16_t _exCNT;
 	Dir_Typedef _relativeDir;
 
+	volatile bool _sync; //中断保护用标志
+
 	virtual void GPIOInit() = 0;
 	virtual void TIMRCCInit() = 0;
 	void TIMInit();

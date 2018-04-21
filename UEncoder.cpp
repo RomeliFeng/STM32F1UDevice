@@ -18,6 +18,8 @@ UEncoder::UEncoder(TIM_TypeDef* TIMx, UIT_Typedef& it) {
 	_exCNT = 0;
 	_relativeDir = Dir_Positive;
 
+	_sync = false;
+
 	//自动将对象指针加入资源池
 	_pool[_poolSp++] = this;
 }
@@ -93,22 +95,38 @@ void UEncoder::SetPos(int32_t pos) {
  */
 int32_t UEncoder::GetPos() const {
 	int32_t pos;
-	int32_t pos1 = int32_t(_exCNT) * 0x10000 + _TIMx->CNT;
-	int32_t pos2 = int32_t(_exCNT) * 0x10000 + _TIMx->CNT;
-	int32_t pos3 = int32_t(_exCNT) * 0x10000 + _TIMx->CNT;
-
-	if (abs(pos1 - pos2) < 0x1000) {
-		//pos3错误
-		pos = pos2;
-	} else if (abs(pos2 - pos3) < 0x1000) {
-		//pos1错误
-		pos = pos3;
-	} else if (abs(pos3 - pos1) < 0x1000) {
-		//pos2错误
-		pos = pos3;
-	} else {
-		pos = pos1;
+//	int32_t pos1 = int32_t(_exCNT) * 0x10000 + _TIMx->CNT;
+//	int32_t pos2 = int32_t(_exCNT) * 0x10000 + _TIMx->CNT;
+//	int32_t pos3 = int32_t(_exCNT) * 0x10000 + _TIMx->CNT;
+//
+//	if (abs(pos1 - pos2) < 0x1000) {
+//		//pos3错误
+//		pos = pos2;
+//	} else if (abs(pos2 - pos3) < 0x1000) {
+//		//pos1错误
+//		pos = pos3;
+//	} else if (abs(pos3 - pos1) < 0x1000) {
+//		//pos2错误
+//		pos = pos3;
+//	} else {
+//		pos = pos1;
+//	}
+	while (true) {
+		_sync = false;
+		pos = int32_t(_exCNT) * 0x10000 + _TIMx->CNT;
+		if(!_sync){
+			//取数中没有进入中断
+			if(!TIM_Get_IT_Update(_TIMx)){
+				//中断标志没有置位，数据安全
+				break;
+			}else{
+				//有中断正在等待，执行中断函数并开始下一次取数
+				IRQ();
+			}
+		}
+		//取数中进入了中断，重新取数
 	}
+
 	return _relativeDir == Dir_Negtive ? -pos : pos;
 }
 
@@ -118,12 +136,15 @@ int32_t UEncoder::GetPos() const {
  * return void
  */
 void UEncoder::IRQ() {
-	if (_TIMx->CNT <= 0x7fff) {
-		++_exCNT;
-	} else {
-		--_exCNT;
+	if (TIM_Get_IT_Update(_TIMx)) {
+		_sync = true;
+		if (_TIMx->CNT <= 0x7fff) {
+			++_exCNT;
+		} else {
+			--_exCNT;
+		}
+		TIM_Clear_Update_Flag(_TIMx);
 	}
-	TIM_Clear_Update_Flag(_TIMx);
 }
 
 void UEncoder::GPIOInit() {
