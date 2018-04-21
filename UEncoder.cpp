@@ -132,18 +132,21 @@ int32_t UEncoder::GetPos() {
 
 /*
  * author Romeli
- * explain 中断处理函数，当定时器溢出时累加额外计数
+ * explain 中断处理函数(中断安全？)
  * return void
  */
 void UEncoder::IRQ() {
 	if (TIM_Get_IT_Update(_TIMx)) {
 		_sync = true;
+
+		int16_t exCNT;
 		if (_TIMx->CNT <= 0x7fff) {
-			++_exCNT;
+			exCNT = _exCNT + 1;
 		} else {
-			--_exCNT;
+			exCNT = _exCNT - 1;
 		}
 		TIM_Clear_Update_Flag(_TIMx);
+		_exCNT = exCNT;
 	}
 }
 
