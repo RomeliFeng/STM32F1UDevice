@@ -90,7 +90,7 @@ void UEncoder::SetPos(int32_t pos) {
 
 /*
  * author Romeli
- * explain 读取编码器当前位置
+ * explain 读取编码器当前位置 非中断安全，需要防止被中断嵌套
  * return int32_t 当前位置
  */
 int32_t UEncoder::GetPos() {
