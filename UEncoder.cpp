@@ -136,17 +136,16 @@ int32_t UEncoder::GetPos() {
  * return void
  */
 void UEncoder::IRQ() {
+	_sync = true;
 	if (TIM_Get_IT_Update(_TIMx)) {
-		_sync = true;
-
 		int16_t exCNT;
 		if (_TIMx->CNT <= 0x7fff) {
 			exCNT = _exCNT + 1;
 		} else {
 			exCNT = _exCNT - 1;
 		}
-		TIM_Clear_Update_Flag(_TIMx);
 		_exCNT = exCNT;
+		TIM_Clear_Update_Flag(_TIMx);
 	}
 }
 

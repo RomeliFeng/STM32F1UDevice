@@ -633,7 +633,7 @@ uint32_t UStepMotor::GetDecelStep(uint16_t speedFrom) {
  * return void
  */
 void UStepMotor::SetSpeed(uint16_t speed) {
-	if (speed <= 150) {
+	if (speed < 150) {
 		//Error @Romeli 过低的速度，不应该发生
 		UDebugOut("Under speed show be disappear");
 		return;
