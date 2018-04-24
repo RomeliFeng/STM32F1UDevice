@@ -34,6 +34,8 @@ public:
 
 	void Init();
 	static void InitAll();
+	static void StopAll();
+	static void UnLockAll();
 	static uint8_t GetTheLowestPreemptionPriority();
 
 	bool IsBusy() {

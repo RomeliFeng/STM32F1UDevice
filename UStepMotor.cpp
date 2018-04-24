@@ -104,6 +104,28 @@ void UStepMotor::InitAll() {
 
 /*
  * author Romeli
+ * explain 停止所有步进电机模块
+ * return void
+ */
+void UStepMotor::StopAll() {
+	for (uint8_t i = 0; i < _poolSp; ++i) {
+		_pool[i]->Stop();
+	}
+}
+
+/*
+ * author Romeli
+ * explain 解锁所有步进电机模块
+ * return void
+ */
+void UStepMotor::UnLockAll() {
+	for (uint8_t i = 0; i < _poolSp; ++i) {
+		_pool[i]->Unlock();
+	}
+}
+
+/*
+ * author Romeli
  * explain 获取步进电机模块中权限最低的抢占优先级
  * return uint8_t
  */
