@@ -84,7 +84,7 @@ void UEncoder::ClearPos() {
  * explain 读取编码器当前位置 非中断安全，需要防止被中断嵌套
  * return int32_t 当前位置
  */
-int32_t UEncoder::GetPos() {
+int32_t UEncoder::GetPos() const{
 //	int32_t pos;
 //	int32_t pos1 = int32_t(_exCNT) * 0x10000 + _TIMx->CNT;
 //	int32_t pos2 = int32_t(_exCNT) * 0x10000 + _TIMx->CNT;
