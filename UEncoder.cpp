@@ -8,8 +8,6 @@
 #include <UEncoder.h>
 #include <Misc/UDebug.h>
 
-#define TIM_IT_CCx (TIM_IT_CC1 | TIM_IT_CC2 | TIM_IT_CC3 | TIM_IT_CC4)
-
 UEncoder* UEncoder::_pool[4];
 uint8_t UEncoder::_poolSp = 0;
 
