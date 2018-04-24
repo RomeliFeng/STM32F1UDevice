@@ -15,7 +15,7 @@ class UEncoder {
 public:
 	enum Dir_Typedef
 		:uint8_t {
-		Dir_Positive, Dir_Negtive
+			Dir_Positive, Dir_Negtive
 	};
 
 	UEncoder(TIM_TypeDef* TIMx, UIT_Typedef& it);
@@ -33,6 +33,11 @@ public:
 	//中断服务子函数
 	void IRQ();
 protected:
+	enum Flow_Typedef
+		:uint8_t {
+			Flow_CC1, Flow_CC2, Flow_CC3, Flow_CC4
+	};
+
 	static UEncoder* _pool[];
 	static uint8_t _poolSp;
 
@@ -40,11 +45,13 @@ protected:
 	TIM_TypeDef* _TIMx;
 
 	UIT_Typedef _it; //中断优先级
-	volatile int16_t _exCNT;
+	volatile int32_t _exCNT;
 	volatile int32_t _pos;
 	Dir_Typedef _relativeDir;
 
 	volatile bool _sync; //中断保护用标志
+
+	volatile Flow_Typedef _flow;
 
 	virtual void GPIOInit() = 0;
 	virtual void TIMRCCInit() = 0;

@@ -8,6 +8,8 @@
 #include <UEncoder.h>
 #include <Misc/UDebug.h>
 
+#define TIM_IT_CCx (TIM_IT_CC1 | TIM_IT_CC2 | TIM_IT_CC3 | TIM_IT_CC4)
+
 UEncoder* UEncoder::_pool[4];
 uint8_t UEncoder::_poolSp = 0;
 
@@ -18,7 +20,9 @@ UEncoder::UEncoder(TIM_TypeDef* TIMx, UIT_Typedef& it) {
 	_exCNT = 0;
 	_relativeDir = Dir_Positive;
 	_pos = 0;
+
 	_sync = false;
+	_flow = Flow_CC1;
 
 	//自动将对象指针加入资源池
 	_pool[_poolSp++] = this;
@@ -37,8 +41,6 @@ void UEncoder::Init() {
 	TIMInit();
 	ITInit();
 	//顺序很重要
-	TIM_Clear_Update_Flag(_TIMx);
-	TIM_Enable_IT_Update(_TIMx);
 	TIM_Enable(_TIMx);
 }
 
@@ -94,7 +96,7 @@ void UEncoder::SetPos(int32_t pos) {
  * return int32_t 当前位置
  */
 int32_t UEncoder::GetPos() {
-	int32_t pos;
+//	int32_t pos;
 //	int32_t pos1 = int32_t(_exCNT) * 0x10000 + _TIMx->CNT;
 //	int32_t pos2 = int32_t(_exCNT) * 0x10000 + _TIMx->CNT;
 //	int32_t pos3 = int32_t(_exCNT) * 0x10000 + _TIMx->CNT;
@@ -111,21 +113,59 @@ int32_t UEncoder::GetPos() {
 //	} else {
 //		pos = pos1;
 //	}
+//	while (true) {
+//		_sync = false;
+//		pos = int32_t(_exCNT) * 0x10000 + _TIMx->CNT;
+//		if (!_sync) {
+//			//取数中没有进入中断
+//			if (!TIM_Get_IT_Update(_TIMx)) {
+//				//中断标志没有置位，数据安全
+//				break;
+//			} else {
+//				//有中断正在等待，执行中断函数并开始下一次取数
+//				IRQ();
+//			}
+//		}
+//		//取数中进入了中断，重新取数
+//	}
+
+	int32_t CNT;
+	int32_t pos;
+	Flow_Typedef flow;
+	int32_t off = 0;
+
+	//安全的取数
 	while (true) {
 		_sync = false;
-		pos = int32_t(_exCNT) * 0x10000 + _TIMx->CNT;
+
+		CNT = _TIMx->CNT;
+		pos = _exCNT;
+		flow = _flow;
+
 		if (!_sync) {
 			//取数中没有进入中断
-			if (!TIM_Get_IT_Update(_TIMx)) {
-				//中断标志没有置位，数据安全
-				break;
-			} else {
-				//有中断正在等待，执行中断函数并开始下一次取数
-				IRQ();
-			}
+			break;
 		}
-		//取数中进入了中断，重新取数
 	}
+
+	//补偿加减位置偏移造成的影响
+	switch (flow) {
+	case Flow_CC1:
+		if (CNT > 0xf000) {
+			off -= 0x10000;
+		}
+		break;
+	case Flow_CC4:
+		if (CNT < 0x1000) {
+			off += 0x10000;
+		}
+		break;
+	default:
+		break;
+	}
+
+	//计算位置
+	pos = pos + CNT + off;
 	_pos = _relativeDir == Dir_Negtive ? -pos : pos;
 	return _pos;
 }
@@ -137,15 +177,35 @@ int32_t UEncoder::GetPos() {
  */
 void UEncoder::IRQ() {
 	_sync = true;
-	if (TIM_Get_IT_Update(_TIMx)) {
-		int16_t exCNT;
-		if (_TIMx->CNT <= 0x7fff) {
-			exCNT = _exCNT + 1;
-		} else {
-			exCNT = _exCNT - 1;
+	uint16_t status = _TIMx->SR & (TIM_IT_CCx);
+	int32_t exCNT = _exCNT;
+	if (status != 0) {
+		uint16_t flag = 0;
+		if ((status & TIM_IT_CC1) != 0) {
+			if (_flow == Flow_CC4) {
+				exCNT = _exCNT + 0x10000;
+				_exCNT = exCNT;
+			}
+			_flow = Flow_CC1;
+			flag |= TIM_IT_CC1;
 		}
-		_exCNT = exCNT;
-		TIM_Clear_Update_Flag(_TIMx);
+		if ((status & TIM_IT_CC2) != 0) {
+			_flow = Flow_CC2;
+			flag |= TIM_IT_CC2;
+		}
+		if ((status & TIM_IT_CC3) != 0) {
+			_flow = Flow_CC3;
+			flag |= TIM_IT_CC3;
+		}
+		if ((status & TIM_IT_CC4) != 0) {
+			if (_flow == Flow_CC1) {
+				exCNT = _exCNT - 0x10000;
+				_exCNT = exCNT;
+			}
+			_flow = Flow_CC4;
+			flag |= TIM_IT_CC3;
+		}
+		_TIMx->SR = uint16_t(~(TIM_IT_CCx));
 	}
 }
 
@@ -184,11 +244,29 @@ void UEncoder::TIMInit() {
 	TIM_ICPolarity_Falling, TIM_ICPolarity_Falling);
 
 	TIM_ICInitTypeDef TIM_ICInitStructure;
-
 	TIM_ICStructInit(&TIM_ICInitStructure);
 	TIM_ICInitStructure.TIM_ICFilter = 1;
 	TIM_ICInit(_TIMx, &TIM_ICInitStructure);
 	_TIMx->CNT = 0;
+
+	TIM_OCInitTypeDef TIM_OCInitStructure;
+	TIM_OCStructInit(&TIM_OCInitStructure);
+	TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_Timing;
+//正转+1信号
+	TIM_OCInitStructure.TIM_Pulse = 0x1000;
+	TIM_OC1Init(_TIMx, &TIM_OCInitStructure);
+
+//方向检测信号，靠近正转
+	TIM_OCInitStructure.TIM_Pulse = 0x3000;
+	TIM_OC2Init(_TIMx, &TIM_OCInitStructure);
+
+//方向检测信号，靠近反转
+	TIM_OCInitStructure.TIM_Pulse = 0xd000;
+	TIM_OC3Init(_TIMx, &TIM_OCInitStructure);
+
+//反转-1信号
+	TIM_OCInitStructure.TIM_Pulse = 0xf000;
+	TIM_OC4Init(_TIMx, &TIM_OCInitStructure);
 }
 
 /*
@@ -206,7 +284,7 @@ void UEncoder::ITInit() {
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = _it.SubPriority;
 	NVIC_Init(&NVIC_InitStructure);
 
-	TIM_ClearITPendingBit(_TIMx, TIM_IT_Update);
-	TIM_ITConfig(_TIMx, TIM_IT_Update, ENABLE);
+	TIM_Clear_CCx_Flag(_TIMx);
+	TIM_Enable_IT_CCx(_TIMx);
 }
 
