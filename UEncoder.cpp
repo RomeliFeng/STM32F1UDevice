@@ -70,22 +70,13 @@ void UEncoder::SetRelativeDir(Dir_Typedef dir) {
 
 /*
  * author Romeli
- * explain 设置编码器位置
- * param pos 编码器位置
+ * explain 编码器位置清零
  * return void
  */
-void UEncoder::SetPos(int32_t pos) {
-	if (_relativeDir == Dir_Negtive) {
-		pos = -pos;
-	}
-	if (pos >= 0) {
-		_exCNT = uint16_t(pos / 0x10000);
-		_TIMx->CNT = uint16_t(pos - (_exCNT * 0x10000));
-	} else {
-		pos = -pos;
-		_exCNT = uint16_t(pos / 0x10000 + 1);
-		_TIMx->CNT = uint16_t((_exCNT * 0x10000) - pos);
-	}
+void UEncoder::ClearPos() {
+	_exCNT = 0;
+	_TIMx->CNT = 0;
+	_flow = Flow_CC1;
 }
 
 /*

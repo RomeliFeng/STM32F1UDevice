@@ -26,7 +26,7 @@ public:
 	void Init();
 	//设置当前位置
 	void SetRelativeDir(Dir_Typedef dir);
-	void SetPos(int32_t pos);
+	void ClearPos();
 	//获取当前位置
 	int32_t GetPos();
 
