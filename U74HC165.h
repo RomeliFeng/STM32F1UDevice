@@ -14,9 +14,11 @@ class U74HC165 {
 public:
 	U74HC165();
 	void Init();
-	void Read(uint8_t* data, uint8_t len);
-
+	bool Read(uint8_t* data, uint8_t len);
+	bool IsBusy() const;
 protected:
+	volatile bool _busy;
+
 	virtual void GPIOInit() = 0;
 	virtual inline void PL_Set() = 0;
 	virtual inline void CP_Set() = 0;

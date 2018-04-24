@@ -9,16 +9,20 @@
 #define U74HC595_H_
 
 #include <cmsis_device.h>
+#include <Misc/UMisc.h>
 
 class U74HC595 {
 public:
 	U74HC595();
 	void Init();
-	void Write(uint8_t* data, uint8_t len);
+	bool Write(uint8_t* data, uint8_t len);
 
 	void Enable();
 	void Disable();
+	bool IsBusy() const;
 protected:
+	volatile bool _busy;
+
 	virtual void GPIOInit() = 0;
 	virtual inline void DS_Set() = 0;
 	virtual inline void OE_Set() = 0;

@@ -25,9 +25,12 @@ void U74HC165::Init() {
  * explain 从74HC165接口读取并行数据，长度为字节
  * param data 读取回来的数据
  * param len 欲读取数据长度
- * return void
+ * return bool 是否成功，在同时访问时会失败
  */
-void U74HC165::Read(uint8_t* data, uint8_t len) {
+bool U74HC165::Read(uint8_t* data, uint8_t len) {
+	if (_busy) {
+		return false;
+	}
 	CP_Reset();
 	//发送一个低电平脉冲载入电平
 	PL_Reset();
@@ -49,6 +52,16 @@ void U74HC165::Read(uint8_t* data, uint8_t len) {
 		}
 	}
 	CE_Set();
+	return true;
+}
+
+/*
+ * author Romeli
+ * explain 查询是否繁忙
+ * return bool
+ */
+bool U74HC165::IsBusy() const {
+	return _busy;
 }
 
 inline void U74HC165::PL_Set() {
