@@ -74,12 +74,30 @@ void UUSART::Init(uint32_t baud, uint16_t USART_Parity,
 
 /*
  * author Romeli
+ * explain 从流中读取指定数据长度
+ * param data 读回数据存放数组
+ * param sync 是否是同步读取
+ * return Status_Typedef
+ */
+Status_Typedef UUSART::Read(uint8_t* data, uint16_t len, bool sync,
+		UEvent callBackEvent) {
+	//循环读取
+	for (uint8_t i = 0; i < len; ++i) {
+		data[i] = _rxBuf.Data[_rxBuf.Start];
+		SpInc();
+	}
+	return Status_Ok;
+}
+
+/*
+ * author Romeli
  * explain 向串口里写数组
  * param1 data 数组地址
  * param2 len 数组长度
  * return Status_Typedef
  */
-Status_Typedef UUSART::Write(uint8_t* data, uint16_t len, bool sync) {
+Status_Typedef UUSART::Write(uint8_t* data, uint16_t len, bool sync,
+		UEvent callBackEvent) {
 	if (len == 0) {
 		//发送的字节数为0
 		return Status_Error;
@@ -356,5 +374,17 @@ void UUSART::RS485StatusCtl(RS485Dir_Typedef dir) {
 		default:
 			break;
 		}
+	}
+}
+
+/*
+ * author Romeli
+ * explain 向下移动流指针
+ * return void
+ */
+void UUSART::SpInc() {
+	if ((_rxBuf.Size != 0) && (_rxBuf.Start != _rxBuf.End)) {
+		//缓冲区指针+1
+		_rxBuf.Start = uint16_t((_rxBuf.Start + 1) % _rxBuf.Size);
 	}
 }

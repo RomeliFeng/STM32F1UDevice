@@ -35,8 +35,10 @@ public:
 	void Init(uint32_t baud, uint16_t USART_Parity = USART_Parity_No,
 			RS485Status_Typedef RS485Status = RS485Status_Disable);
 
-	Status_Typedef Write(uint8_t* data, uint16_t len, bool sync = false)
-			override;
+	Status_Typedef Read(uint8_t* data, uint16_t len, bool sync = false,
+			UEvent callBackEvent = nullptr) override;
+	Status_Typedef Write(uint8_t* data, uint16_t len, bool sync = false,
+			UEvent callBackEvent = nullptr) override;
 
 	bool CheckFrame();
 
@@ -61,6 +63,8 @@ protected:
 	void ITInit() override;
 
 	void RS485StatusCtl(RS485Dir_Typedef dir);
+private:
+	void SpInc();
 };
 
 #endif /* UUSART_H_ */

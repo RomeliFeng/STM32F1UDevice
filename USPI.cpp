@@ -40,29 +40,9 @@ void USPI::Init(uint16_t SPI_BaudRatePrescaler) {
 	SPI_Cmd(_SPIx, ENABLE);
 }
 
-Status_Typedef USPI::Write(uint8_t* data, uint16_t len, bool sync) {
-	switch (_mode) {
-	case Mode_Normal:
-		for (uint16_t i = 0; i < len; ++i) {
-			_SPIx->DR = data[i];
-			while ((_SPIx->SR & SPI_I2S_FLAG_RXNE) == 0)
-				;
-		}
-		break;
-	case Mode_DMA:
-		DMASend(data, len);
-		if (sync) {
-			while (_DMATxBusy)
-				;
-		}
-		break;
-	default:
-		break;
-	}
-	return Status_Ok;
-}
-
-Status_Typedef USPI::Read(uint8_t* data, uint16_t len, bool sync) {
+Status_Typedef USPI::Read(uint8_t* data, uint16_t len, bool sync,
+		UEvent callBackEvent) {
+	ReadCallBackEvent = callBackEvent;
 	switch (_mode) {
 	case Mode_Normal:
 		for (uint16_t i = 0; i < len; ++i) {
@@ -76,6 +56,30 @@ Status_Typedef USPI::Read(uint8_t* data, uint16_t len, bool sync) {
 		DMAReceive(data, len);
 		if (sync) {
 			while (_DMARxBusy)
+				;
+		}
+		break;
+	default:
+		break;
+	}
+	return Status_Ok;
+}
+
+Status_Typedef USPI::Write(uint8_t* data, uint16_t len, bool sync,
+		UEvent callBackEvent) {
+	WriteCallBackEvent = callBackEvent;
+	switch (_mode) {
+	case Mode_Normal:
+		for (uint16_t i = 0; i < len; ++i) {
+			_SPIx->DR = data[i];
+			while ((_SPIx->SR & SPI_I2S_FLAG_RXNE) == 0)
+				;
+		}
+		break;
+	case Mode_DMA:
+		DMASend(data, len);
+		if (sync) {
+			while (_DMATxBusy)
 				;
 		}
 		break;
@@ -102,6 +106,11 @@ void USPI::IRQDMARx() {
 	_DMAx->IFCR = _DMAy_IT_TCx_Rx;
 
 	_DMARxBusy = false;
+
+	if (ReadCallBackEvent != nullptr) {
+		ReadCallBackEvent();
+		ReadCallBackEvent = nullptr;
+	}
 }
 
 void USPI::GPIOInit() {
@@ -115,7 +124,7 @@ void USPI::GPIOInit() {
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 }
 
-void USPI::SPIInit(uint16_t SPI_BaudRatePrescaler) {
+void USPI::SPIInit(uint16_t SPI_BaudRatePrescaler, SPIMode_Typedef mode) {
 	SPI_InitTypeDef SPI_InitStructure;
 
 	SPIRCCInit();
@@ -131,6 +140,8 @@ void USPI::SPIInit(uint16_t SPI_BaudRatePrescaler) {
 	SPI_InitStructure.SPI_CRCPolynomial = 7;
 
 	SPI_Init(_SPIx, &SPI_InitStructure);
+
+	_spiMode = mode;
 }
 
 void USPI::DMAInit() {
@@ -138,9 +149,6 @@ void USPI::DMAInit() {
 
 	SPI_I2S_DMACmd(_SPIx, SPI_I2S_DMAReq_Rx, ENABLE);
 	SPI_I2S_DMACmd(_SPIx, SPI_I2S_DMAReq_Tx, ENABLE);
-
-	DMA_Cmd(_DMAy_Channelx_Rx, ENABLE);
-	DMA_Cmd(_DMAy_Channelx_Tx, ENABLE);
 }
 
 void USPI::ITInit() {

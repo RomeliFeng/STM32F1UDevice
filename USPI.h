@@ -13,6 +13,10 @@
 
 class USPI: public UDMAStream {
 public:
+	enum SPIMode_Typedef {
+		SPIMode_Master, SPIMode_Slave
+	};
+
 	uint8_t DataForRead;
 
 	USPI(uint16_t txBufSize, SPI_TypeDef* SPIx, UIT_Typedef& itSPIx);
@@ -24,11 +28,10 @@ public:
 
 	void Init(uint16_t SPI_BaudRatePrescaler);
 
-	Status_Typedef Write(uint8_t* data, uint16_t len, bool sync = false)
-			override;
-
-	Status_Typedef Read(uint8_t* data, uint16_t len, bool sync = false)
-			override;
+	Status_Typedef Read(uint8_t* data, uint16_t len, bool sync = false,
+			UEvent callBackEvent = nullptr) override;
+	Status_Typedef Write(uint8_t* data, uint16_t len, bool sync = false,
+			UEvent callBackEvent = nullptr) override;
 
 	virtual bool IsBusy() override;
 
@@ -37,11 +40,13 @@ public:
 protected:
 	SPI_TypeDef* _SPIx;
 	UIT_Typedef _itSPI;
+	SPIMode_Typedef _spiMode;
 
 	virtual void GPIOInit() = 0;
 	virtual void SPIRCCInit() = 0;
 
-	virtual void SPIInit(uint16_t SPI_BaudRatePrescaler);
+	virtual void SPIInit(uint16_t SPI_BaudRatePrescaler, SPIMode_Typedef mode =
+			SPIMode_Master);
 	void DMAInit() override;
 	void ITInit() override;
 
