@@ -14,7 +14,7 @@
 
 UUSART::UUSART(uint16_t rxBufSize, uint16_t txBufSize, USART_TypeDef* USARTx,
 		UIT_Typedef& itUSART) :
-		UStream(rxBufSize) {
+		UDMAStream(rxBufSize) {
 	_periph = Periph_USART;
 
 	_USARTx = USARTx;
@@ -29,8 +29,9 @@ UUSART::UUSART(uint16_t rxBufSize, uint16_t txBufSize, USART_TypeDef* USARTx,
 		DMA_Channel_TypeDef* DMAy_Channelx_Rx,
 		DMA_Channel_TypeDef* DMAy_Channelx_Tx, UIT_Typedef& itDMARx,
 		UIT_Typedef& itDMATx) :
-		UStream(rxBufSize, txBufSize, DMAx, DMAy_Channelx_Rx, DMAy_Channelx_Tx,
-				itDMARx, itDMATx) {
+		UDMAStream(rxBufSize, txBufSize, DMAx, DMAy_Channelx_Rx,
+				DMAy_Channelx_Tx, itDMARx, itDMATx, uint32_t(&USARTx->DR),
+				uint32_t(&USARTx->DR)) {
 	_periph = Periph_USART;
 
 	_USARTx = USARTx;
@@ -66,7 +67,7 @@ void UUSART::Init(uint32_t baud, uint16_t USART_Parity,
 		DMAInit();
 	}
 	//中断初始化
-	ITInit(_mode);
+	ITInit();
 	//使能USART(使用库函数兼容性好)
 	USART_Cmd(_USARTx, ENABLE);
 }
@@ -156,6 +157,7 @@ void UUSART::IRQUSART() {
 			//复位DMA接收区大小
 			_DMAy_Channelx_Rx->CNDTR = _rxBuf.Size;
 			//循环搬运数据
+
 			for (uint16_t i = 0; i < len; ++i) {
 				_rxBuf.Data[_rxBuf.End] = _DMARxBuf.Data[i];
 				_rxBuf.End = uint16_t((_rxBuf.End + 1) % _rxBuf.Size);
@@ -198,7 +200,7 @@ void UUSART::IRQUSART() {
  * return Status_Typedef
  */
 void UUSART::IRQDMATx() {
-	IRQDMATx();
+	UDMAStream::IRQDMATx();
 	RS485StatusCtl(RS485Dir_Rx);
 }
 
@@ -267,10 +269,58 @@ void UUSART::USARTInit(uint32_t baud, uint16_t USART_Parity) {
 
 /*
  * author Romeli
+ * explain 初始化DMA设置
+ * return void
+ */
+void UUSART::DMAInit() {
+//	DMA_InitTypeDef DMA_InitStructure;
+//
+//	//开启DMA时钟
+//	DMARCCInit(_DMAx);
+//
+//	DMA_DeInit(_DMAy_Channelx_Rx);
+//	DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t) (&_USARTx->DR);
+//	DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t) _DMARxBuf.Data;
+//	DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;
+//	DMA_InitStructure.DMA_BufferSize = _DMARxBuf.Size;
+//	DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+//	DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
+//	DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+//	DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+//	DMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
+//	DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
+//	DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
+//	DMA_Init(_DMAy_Channelx_Rx, &DMA_InitStructure);
+//
+//	DMA_DeInit(_DMAy_Channelx_Tx);
+//	DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t) (&_USARTx->DR);
+//	DMA_InitStructure.DMA_MemoryBaseAddr = 0;				//临时设置，无效
+//	DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralDST;
+//	DMA_InitStructure.DMA_BufferSize = 0;				//临时设置，无效
+//	DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+//	DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
+//	DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+//	DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+//	DMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
+//	DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
+//	DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
+//	DMA_Init(_DMAy_Channelx_Tx, &DMA_InitStructure);
+	UDMAStream::DMAInit();
+
+	//串口发送接收的DMA功能
+	USART_DMACmd(_USARTx, USART_DMAReq_Tx, ENABLE);
+	USART_DMACmd(_USARTx, USART_DMAReq_Rx, ENABLE);
+
+	DMA_Cmd(_DMAy_Channelx_Rx, ENABLE);
+	//DMA_Cmd(_DMAy_Channelx_Tx, ENABLE); //发送DMA不开启
+}
+
+/*
+ * author Romeli
  * explain IT初始化
  * return void
  */
-void UUSART::ITInit(Mode_Typedef mode) {
+void UUSART::ITInit() {
 	NVIC_InitTypeDef NVIC_InitStructure;
 
 	NVIC_InitStructure.NVIC_IRQChannel = _itUSART.NVIC_IRQChannel;
@@ -280,22 +330,10 @@ void UUSART::ITInit(Mode_Typedef mode) {
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = _itUSART.SubPriority;
 	NVIC_Init(&NVIC_InitStructure);
 
-	if (mode == Mode_DMA) {
-		NVIC_InitStructure.NVIC_IRQChannel = _itDMARx->NVIC_IRQChannel;
-		NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
-				_itDMARx->PreemptionPriority;
-		NVIC_InitStructure.NVIC_IRQChannelSubPriority = _itDMARx->SubPriority;
-		NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-		NVIC_Init(&NVIC_InitStructure);
+	if (_mode == Mode_DMA) {
+		UDMAStream::ITInit();
 
-		NVIC_InitStructure.NVIC_IRQChannel = _itDMATx->NVIC_IRQChannel;
-		NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
-				_itDMATx->PreemptionPriority;
-		NVIC_InitStructure.NVIC_IRQChannelSubPriority = _itDMATx->SubPriority;
-		NVIC_Init(&NVIC_InitStructure);
-		//串口发送接收的DMA功能
-		USART_DMACmd(_USARTx, USART_DMAReq_Tx, ENABLE);
-		USART_DMACmd(_USARTx, USART_DMAReq_Rx, ENABLE);
+		DMA_ITConfig(_DMAy_Channelx_Tx, DMA_IT_TC, ENABLE);
 	} else {
 		//开启串口的字节接收中断
 		USART_ITConfig(_USARTx, USART_IT_RXNE, ENABLE);
@@ -303,53 +341,6 @@ void UUSART::ITInit(Mode_Typedef mode) {
 
 	//开启串口的帧接收中断
 	USART_ITConfig(_USARTx, USART_IT_IDLE, ENABLE);
-}
-
-/*
- * author Romeli
- * explain 初始化DMA设置
- * return void
- */
-void UUSART::DMAInit() {
-	DMA_InitTypeDef DMA_InitStructure;
-
-	//开启DMA时钟
-	DMARCCInit();
-
-	DMA_DeInit(_DMAy_Channelx_Tx);
-
-	DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t) (&_USARTx->DR);
-	DMA_InitStructure.DMA_MemoryBaseAddr = 0;				//临时设置，无效
-	DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralDST;
-	DMA_InitStructure.DMA_BufferSize = 10;				//临时设置，无效
-	DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-	DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
-	DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
-	DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
-	DMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
-	DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
-	DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
-
-	DMA_Init(_DMAy_Channelx_Tx, &DMA_InitStructure);
-	DMA_ITConfig(_DMAy_Channelx_Tx, DMA_IT_TC, ENABLE);
-	//发送DMA不开启
-//	DMA_Cmd(DMA1_Channel4, ENABLE);
-
-	DMA_DeInit(_DMAy_Channelx_Rx);
-	DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t) (&_USARTx->DR);
-	DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t) _DMARxBuf.Data;
-	DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;
-	DMA_InitStructure.DMA_BufferSize = _DMARxBuf.Size;
-	DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-	DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
-	DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
-	DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
-	DMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
-	DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
-	DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
-
-	DMA_Init(_DMAy_Channelx_Rx, &DMA_InitStructure);
-	DMA_Cmd(_DMAy_Channelx_Rx, ENABLE);
 }
 
 void UUSART::RS485StatusCtl(RS485Dir_Typedef dir) {

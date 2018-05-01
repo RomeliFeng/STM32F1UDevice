@@ -10,11 +10,10 @@
 
 #include <cmsis_device.h>
 #include <Misc/UMisc.h>
-#include <Communication/UStream.h>
-#include <Communication/UDMAIO.h>
+#include <Communication/UDMAStream.h>
 #include <Event/UEventPool.h>
 
-class UUSART: public UStream {
+class UUSART: public UDMAStream {
 public:
 	enum RS485Status_Typedef {
 		RS485Status_Disable, RS485Status_Enable
@@ -54,13 +53,12 @@ protected:
 	UIT_Typedef _itUSART;
 
 	virtual void USARTRCCInit() = 0;
-	virtual void DMARCCInit() = 0;
 	virtual void GPIOInit() = 0;
 	virtual void RS485DirCtl(RS485Dir_Typedef dir);
 
 	void USARTInit(uint32_t baud, uint16_t USART_Parity);
-	void ITInit(Mode_Typedef mode);
-	void DMAInit();
+	void DMAInit() override;
+	void ITInit() override;
 
 	void RS485StatusCtl(RS485Dir_Typedef dir);
 };
