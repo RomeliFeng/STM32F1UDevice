@@ -8,39 +8,22 @@
 #include <USPI.h>
 
 USPI::USPI(uint16_t txBufSize, SPI_TypeDef* SPIx, UIT_Typedef& itSPIx) :
-		UStream(0, txBufSize, 0, 0) {
+		UDMAStream(0), _SPIx(SPIx), _itSPI(itSPIx) {
 	DataForRead = 0xff;
 	//普通模式，不需要接收缓冲
 	_periph = Periph_SPI;
-
-	_SPIx = SPIx;
-	_itSPI = itSPIx;
-
-	_mode = Mode_Normal;
 }
 
 USPI::USPI(uint16_t txBufSize, SPI_TypeDef* SPIx, UIT_Typedef& itSPIx,
 		DMA_TypeDef* DMAx, DMA_Channel_TypeDef* DMAy_Channelx_Rx,
 		DMA_Channel_TypeDef* DMAy_Channelx_Tx, UIT_Typedef& itDMARx,
 		UIT_Typedef& itDMATx) :
-		UStream(0, txBufSize, 0, txBufSize) {
+		UDMAStream(0, txBufSize, DMAx, DMAy_Channelx_Rx, DMAy_Channelx_Tx,
+				itDMARx, itDMATx, uint32_t(&SPIx->DR), uint32_t(&SPIx->DR)), _SPIx(
+				SPIx), _itSPI(itSPIx) {
 	DataForRead = 0xff;
 	//DMA模式，不需要接收缓冲，打开双发送缓冲
 	_periph = Periph_SPI;
-
-	_SPIx = SPIx;
-
-	_itSPI = itSPIx;
-	_itDMARx = itDMARx;
-	_itDMATx = itDMATx;
-
-	_DMAx = DMAx;
-	_DMAy_Channelx_Rx = DMAy_Channelx_Rx;
-	_DMAy_Channelx_Tx = DMAy_Channelx_Tx;
-	_DMAy_IT_TCx_Rx = CalcDMATC(_DMAy_Channelx_Rx);
-	_DMAy_IT_TCx_Tx = CalcDMATC(_DMAy_Channelx_Tx);
-
-	_mode = Mode_DMA;
 }
 
 USPI::~USPI() {
@@ -151,33 +134,13 @@ void USPI::SPIInit(uint16_t SPI_BaudRatePrescaler) {
 }
 
 void USPI::DMAInit() {
-	DMA_InitTypeDef DMA_InitStructure;
-
-	DMARCCInit();
-
-	DMA_DeInit(_DMAy_Channelx_Rx);
-	DMA_InitStructure.DMA_PeripheralBaseAddr = uint32_t(&_SPIx->DR);
-	DMA_InitStructure.DMA_MemoryBaseAddr = 0; //使用时进行设置
-	DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;
-	DMA_InitStructure.DMA_BufferSize = 0; //使用时进行设置
-	DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-	DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
-	DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
-	DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
-	DMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
-	DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
-	DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
-	DMA_Init(_DMAy_Channelx_Rx, &DMA_InitStructure);
-
-	DMA_DeInit(_DMAy_Channelx_Tx);
-	DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralDST;
-	DMA_Init(_DMAy_Channelx_Tx, &DMA_InitStructure);
-
-	DMA_ITConfig(_DMAy_Channelx_Rx, DMA_IT_TC, ENABLE);
-	DMA_ITConfig(_DMAy_Channelx_Tx, DMA_IT_TC, ENABLE);
+	UDMAStream::DMAInit();
 
 	SPI_I2S_DMACmd(_SPIx, SPI_I2S_DMAReq_Rx, ENABLE);
 	SPI_I2S_DMACmd(_SPIx, SPI_I2S_DMAReq_Tx, ENABLE);
+
+	DMA_Cmd(_DMAy_Channelx_Rx, ENABLE);
+	DMA_Cmd(_DMAy_Channelx_Tx, ENABLE);
 }
 
 void USPI::ITInit() {
@@ -192,18 +155,9 @@ void USPI::ITInit() {
 		NVIC_Init(&NVIC_InitStructure);
 
 	} else if (_mode == Mode_DMA) {
-		NVIC_InitStructure.NVIC_IRQChannel = _itDMATx.NVIC_IRQChannel;
-		NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
-				_itDMATx.PreemptionPriority;
-		NVIC_InitStructure.NVIC_IRQChannelSubPriority = _itDMATx.SubPriority;
-		NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-		NVIC_Init(&NVIC_InitStructure);
-
-		NVIC_InitStructure.NVIC_IRQChannel = _itDMARx.NVIC_IRQChannel;
-		NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
-				_itDMARx.PreemptionPriority;
-		NVIC_InitStructure.NVIC_IRQChannelSubPriority = _itDMARx.SubPriority;
-		NVIC_Init(&NVIC_InitStructure);
+		UDMAStream::ITInit();
+		DMA_ITConfig(_DMAy_Channelx_Rx, DMA_IT_TC, ENABLE);
+		DMA_ITConfig(_DMAy_Channelx_Tx, DMA_IT_TC, ENABLE);
 	}
 
 }

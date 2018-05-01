@@ -8,10 +8,10 @@
 #ifndef USPI_H_
 #define USPI_H_
 
+#include <Communication/UDMAStream.h>
 #include <Communication/UStream.h>
-#include <Communication/UDMAIO.h>
 
-class USPI: public UStream, public UDMAIO {
+class USPI: public UDMAStream {
 public:
 	uint8_t DataForRead;
 
@@ -36,14 +36,14 @@ public:
 	void IRQDMARx();
 protected:
 	SPI_TypeDef* _SPIx;
-	UIT_Typedef _itSPI, _itDMATx, _itDMARx;
+	UIT_Typedef _itSPI;
 
 	virtual void GPIOInit() = 0;
 	virtual void SPIRCCInit() = 0;
+
 	virtual void SPIInit(uint16_t SPI_BaudRatePrescaler);
-	virtual void DMARCCInit() = 0;
-	void DMAInit();
-	void ITInit();
+	void DMAInit() override;
+	void ITInit() override;
 
 	void DMAReceive(uint8_t *&data, uint16_t &len) override;
 };
