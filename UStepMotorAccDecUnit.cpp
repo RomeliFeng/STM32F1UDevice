@@ -19,7 +19,7 @@ uint8_t UStepMotorAccDecUnit::_poolSp = 0;
 UStepMotorAccDecUnit::UStepMotorAccDecUnit(TIM_TypeDef* TIMx,
 		UIT_Typedef& it) {
 	_TIMx = TIMx;
-	_it = it;
+	_UIT_TIM_Update = it;
 	//自动将对象指针加入资源池
 	_pool[_poolSp++] = this;
 
@@ -73,8 +73,8 @@ void UStepMotorAccDecUnit::InitAll() {
 uint8_t UStepMotorAccDecUnit::GetTheLowestPreemptionPriority() {
 	uint8_t preemptionPriority = 0;
 	for (uint8_t i = 0; i < _poolSp; ++i) {
-		if (_pool[i]->_it.PreemptionPriority > preemptionPriority) {
-			preemptionPriority = _pool[i]->_it.PreemptionPriority;
+		if (_pool[i]->_UIT_TIM_Update.PreemptionPriority > preemptionPriority) {
+			preemptionPriority = _pool[i]->_UIT_TIM_Update.PreemptionPriority;
 		}
 	}
 	return preemptionPriority;
@@ -289,11 +289,11 @@ void UStepMotorAccDecUnit::TIMInit() {
 void UStepMotorAccDecUnit::ITInit() {
 	NVIC_InitTypeDef NVIC_InitStructure;
 	 //设置中断
-	NVIC_InitStructure.NVIC_IRQChannel = _it.NVIC_IRQChannel;
+	NVIC_InitStructure.NVIC_IRQChannel = _UIT_TIM_Update.NVIC_IRQChannel;
 	 NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
-			_it.PreemptionPriority;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = _it.SubPriority;
+			_UIT_TIM_Update.PreemptionPriority;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = _UIT_TIM_Update.SubPriority;
 	NVIC_Init(&NVIC_InitStructure);
 }
 

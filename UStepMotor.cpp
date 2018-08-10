@@ -16,7 +16,7 @@ UStepMotor::UStepMotor(TIM_TypeDef* TIMx, uint8_t TIMx_CCR_Ch,
 		UIT_Typedef& it) {
 	_TIMx = TIMx;
 	_TIMx_CCR_Ch = TIMx_CCR_Ch;
-	_it = it;
+	_UIT_TIM_Update = it;
 
 	switch (_TIMx_CCR_Ch) {
 	case 1:
@@ -52,8 +52,8 @@ UStepMotor::UStepMotor(TIM_TypeDef* TIMx, uint8_t TIMx_CCR_Ch,
 	_decel = 20000;	//减速度
 	_maxSpeed = 10000;	//最大速度
 
-	_Limit_CW = 0; //正转保护限位
-	_Limit_CCW = 0; //反转保护限位
+	_limit_CW = 0; //正转保护限位
+	_limit_CCW = 0; //反转保护限位
 
 	_relativeDir = Dir_CW; //实际方向对应
 	_curDir = Dir_CW; //当前方向
@@ -132,8 +132,8 @@ void UStepMotor::UnLockAll() {
 uint8_t UStepMotor::GetTheLowestPreemptionPriority() {
 	uint8_t preemptionPriority = 0;
 	for (uint8_t i = 0; i < _poolSp; ++i) {
-		if (_pool[i]->_it.PreemptionPriority > preemptionPriority) {
-			preemptionPriority = _pool[i]->_it.PreemptionPriority;
+		if (_pool[i]->_UIT_TIM_Update.PreemptionPriority > preemptionPriority) {
+			preemptionPriority = _pool[i]->_UIT_TIM_Update.PreemptionPriority;
 		}
 	}
 	return preemptionPriority;
@@ -171,7 +171,7 @@ void UStepMotor::SetRelativeDir(Dir_Typedef dir) {
  * return void
  */
 void UStepMotor::SetLimit_CW(uint8_t limit_CW) {
-	_Limit_CW = limit_CW;
+	_limit_CW = limit_CW;
 }
 
 /*
@@ -181,7 +181,7 @@ void UStepMotor::SetLimit_CW(uint8_t limit_CW) {
  * return void
  */
 void UStepMotor::SetLimit_CCW(uint8_t limit_CCW) {
-	_Limit_CCW = limit_CCW;
+	_limit_CCW = limit_CCW;
 }
 
 /*
@@ -205,9 +205,9 @@ void UStepMotor::SetLimit(uint8_t limit_CW, uint8_t limit_CCW) {
  */
 void UStepMotor::SetLimit(Dir_Typedef dir, uint8_t limit) {
 	if (dir == Dir_CW) {
-		_Limit_CW = limit;
+		_limit_CW = limit;
 	} else {
-		_Limit_CCW = limit;
+		_limit_CCW = limit;
 	}
 }
 
@@ -604,11 +604,11 @@ void UStepMotor::ITInit() {
 	NVIC_InitTypeDef NVIC_InitStructure;
 	//设置中断
 
-	NVIC_InitStructure.NVIC_IRQChannel = _it.NVIC_IRQChannel;
+	NVIC_InitStructure.NVIC_IRQChannel = _UIT_TIM_Update.NVIC_IRQChannel;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
-			_it.PreemptionPriority;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = _it.SubPriority;
+			_UIT_TIM_Update.PreemptionPriority;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = _UIT_TIM_Update.SubPriority;
 	NVIC_Init(&NVIC_InitStructure);
 }
 
