@@ -61,7 +61,7 @@ protected:
 	TIM_TypeDef* _TIMx;	//速度计算用定时器
 	UStepMotor* _stepMotor;
 
-	UIT_Typedef _it; //中断优先级
+	UIT_Typedef _UIT_TIM_Update; //中断优先级
 
 	Mode_Typedef _mode;
 	uint32_t _accel;

@@ -82,7 +82,7 @@ protected:
 	static uint8_t _poolSp;
 
 	TIM_TypeDef* _TIMx;	//脉冲发生用定时器
-	UIT_Typedef _it; //中断优先级
+	UIT_Typedef _UIT_TIM_Update; //中断优先级
 
 	uint32_t _TIMy_FRQ;	//脉冲发生定时器的频率，由系统主频/分频数算的
 	volatile uint16_t* _TIMx_CCRx; //脉冲发生定时器的输出通道
@@ -106,8 +106,8 @@ protected:
 	volatile bool _stepLimitAction;	//是否由步数限制运动
 	volatile bool _busy;	//当前电机繁忙?
 
-	uint8_t _Limit_CW; //正转保护限位
-	uint8_t _Limit_CCW; //反转保护限位
+	uint8_t _limit_CW; //正转保护限位
+	uint8_t _limit_CCW; //反转保护限位
 
 	virtual void GPIOInit() = 0;
 	virtual void TIMRCCInit() = 0;

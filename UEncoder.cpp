@@ -13,7 +13,7 @@ uint8_t UEncoder::_poolSp = 0;
 
 UEncoder::UEncoder(TIM_TypeDef* TIMx, UIT_Typedef& it) {
 	_TIMx = TIMx;
-	_it = it;
+	_UIT_TIM_CCx = it;
 
 	_exCNT = 0;
 	_relativeDir = Dir_Positive;
@@ -266,11 +266,11 @@ void UEncoder::TIMInit() {
 void UEncoder::ITInit() {
 	NVIC_InitTypeDef NVIC_InitStructure;
 
-	NVIC_InitStructure.NVIC_IRQChannel = _it.NVIC_IRQChannel;
+	NVIC_InitStructure.NVIC_IRQChannel = _UIT_TIM_CCx.NVIC_IRQChannel;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
-			_it.PreemptionPriority;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = _it.SubPriority;
+			_UIT_TIM_CCx.PreemptionPriority;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = _UIT_TIM_CCx.SubPriority;
 	NVIC_Init(&NVIC_InitStructure);
 
 	TIM_Clear_CCx_Flag(_TIMx);

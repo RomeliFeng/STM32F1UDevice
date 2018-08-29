@@ -44,7 +44,7 @@ protected:
 	//编码器定时器
 	TIM_TypeDef* _TIMx;
 
-	UIT_Typedef _it; //中断优先级
+	UIT_Typedef _UIT_TIM_CCx; //中断优先级
 	volatile int32_t _exCNT;
 	volatile mutable int32_t _pos;
 	Dir_Typedef _relativeDir;
