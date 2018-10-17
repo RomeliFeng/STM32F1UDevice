@@ -15,7 +15,7 @@
 class UADC {
 public:
 	volatile uint32_t *Data;
-	UEventFun CovertDoneEvent;
+	UEvent CovertDoneEvent;
 
 	UADC(ADC_TypeDef* ADCx, uint8_t channelNum, DMA_TypeDef* DMAx,
 			DMA_Channel_TypeDef* DMAy_Channelx, UIT_Typedef &it,
@@ -25,7 +25,7 @@ public:
 	void Init();
 	void RefreshData();
 
-	void SetEventPool(UEventFun covDoneEvent, UEventPool &pool);
+	void SetEventPool(UEvent covDoneEvent, UEventPool &pool);
 
 	inline uint32_t GetRange() {
 		return _range;
@@ -40,7 +40,7 @@ protected:
 	DMA_TypeDef* _DMAx;
 	DMA_Channel_TypeDef* _DMAy_Channelx;
 	UIT_Typedef _it;
-	uint32_t _DMAy_IT_TCx;
+	uint32_t _DMA_IT_TC_Rx;
 	volatile uint16_t* _data;
 	uint32_t* _dataSum;
 	uint32_t _range;

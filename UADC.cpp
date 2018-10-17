@@ -41,7 +41,7 @@ UADC::UADC(ADC_TypeDef* ADCx, uint8_t channelNum, DMA_TypeDef* DMAx,
 	_ePool = nullptr;
 	_DMAx = DMAx;
 	_DMAy_Channelx = DMAy_Channelx;
-	_DMAy_IT_TCx = CalcDMATC(_DMAy_Channelx);
+	_DMA_IT_TC_Rx = CalcDMATC(_DMAy_Channelx);
 
 	_busy = false;
 }
@@ -65,13 +65,13 @@ void UADC::RefreshData() {
 	}
 }
 
-void UADC::SetEventPool(UEventFun covDoneEvent, UEventPool &pool) {
+void UADC::SetEventPool(UEvent covDoneEvent, UEventPool &pool) {
 	CovertDoneEvent = covDoneEvent;
 	_ePool = &pool;
 }
 
 void UADC::IRQ() {
-	_DMAx->IFCR = _DMAy_IT_TCx;
+	_DMAx->IFCR = _DMA_IT_TC_Rx;
 	if (_overSample == 0) {
 		_busy = false;
 	} else {

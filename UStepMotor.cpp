@@ -41,7 +41,7 @@ UStepMotor::UStepMotor(TIM_TypeDef* TIMx, uint8_t TIMx_CCR_Ch,
 
 	_TIMy_FRQ = 0;
 
-	_accDecUnit = 0;	//速度计算单元
+	_accUnit = 0;	//速度计算单元
 
 	_curStep = 0;	//当前已移动步数
 	_tgtStep = 0;	//目标步数
@@ -234,8 +234,8 @@ Status_Typedef UStepMotor::Move(uint32_t step, Dir_Typedef dir, bool sync) {
 	//使能电机
 	Lock();
 	//获取可用的速度计算单元
-	_accDecUnit = UStepMotorAccDecUnit::GetFreeUnit(this);
-	if (_accDecUnit == 0) {
+	_accUnit = UStepMotorAccDecUnit::GetFreeUnit(this);
+	if (_accUnit == 0) {
 		//没有可用的速度计算单元，放弃本次运动任务
 		UDebugOut("Get speed control unit fail,stop move");
 		_busy = false;
@@ -271,11 +271,11 @@ Status_Typedef UStepMotor::Move(uint32_t step, Dir_Typedef dir, bool sync) {
 	if (_accel != 0) {
 		//切换步进电机状态为加速
 		_flow = Flow_Accel;
-		_accDecUnit->SetMode(UStepMotorAccDecUnit::Mode_Accel);
+		_accUnit->SetMode(UStepMotorAccDecUnit::Mode_Accel);
 		//开始加速 目标速度为最大速度
-		_accDecUnit->Start(UStepMotorAccDecUnit::Mode_Accel);
+		_accUnit->Start(UStepMotorAccDecUnit::Mode_Accel);
 		//Warnning 需确保当前流程为加速
-		SetSpeed(_accDecUnit->GetCurSpeed());
+		SetSpeed(_accUnit->GetCurSpeed());
 	} else {
 		_flow = Flow_Run;
 		SetSpeed(_maxSpeed);
@@ -430,11 +430,11 @@ void UStepMotor::IRQ() {
 				_flow = Flow_Decel;
 			}
 		}
-		if (_accDecUnit->IsDone()) {
+		if (_accUnit->IsDone()) {
 			//到达最高步数，开始匀速流程
 			_flow = Flow_Run;
 		}
-		SetSpeed(_accDecUnit->GetCurSpeed());
+		SetSpeed(_accUnit->GetCurSpeed());
 		break;
 	case Flow_Run:
 		if (_decel != 0) {
@@ -446,7 +446,7 @@ void UStepMotor::IRQ() {
 		}
 		break;
 	case Flow_Decel:
-		SetSpeed(_accDecUnit->GetCurSpeed());
+		SetSpeed(_accUnit->GetCurSpeed());
 		break;
 	case Flow_Stop:
 		Stop();
@@ -634,7 +634,7 @@ void UStepMotor::SetDir(Dir_Typedef dir) {
  */
 void UStepMotor::StartDec() {	//关闭速度计算单元
 //开始减速计算
-	_accDecUnit->Start(UStepMotorAccDecUnit::Mode_Decel);
+	_accUnit->Start(UStepMotorAccDecUnit::Mode_Decel);
 }
 
 /*

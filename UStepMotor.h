@@ -88,7 +88,7 @@ protected:
 	volatile uint16_t* _TIMx_CCRx; //脉冲发生定时器的输出通道
 	uint8_t _TIMx_CCR_Ch;
 
-	UStepMotorAccDecUnit* _accDecUnit;	//速度计算单元
+	UStepMotorAccDecUnit* _accUnit;	//速度计算单元
 
 	volatile uint32_t _curStep;	//当前已移动步数
 	volatile uint32_t _tgtStep;	//目标步数

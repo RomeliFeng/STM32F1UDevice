@@ -20,7 +20,7 @@ public:
 		uint8_t dataSize;
 	};
 
-	UEventFun ReceiveEvent;
+	UEvent ReceiveEvent;
 
 	UCAN(uint8_t rxBufSize, CAN_TypeDef* CANx, UIT_Typedef& it);
 	virtual ~UCAN();
@@ -34,7 +34,7 @@ public:
 	void Read(Data_Typedef& data);
 
 	uint8_t Available();
-	void SetEventPool(UEventFun rcvEvent, UEventPool* pool);
+	void SetEventPool(UEvent rcvEvent, UEventPool* pool);
 	void IRQ();
 protected:
 	CAN_TypeDef* _CANx;
