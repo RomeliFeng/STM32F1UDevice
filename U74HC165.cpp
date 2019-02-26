@@ -34,7 +34,7 @@ bool U74HC165::Read(uint8_t* data, uint8_t len) {
 	CP_Reset();
 	//发送一个低电平脉冲载入电平
 	PL_Reset();
-	UTick::Tick(4);
+	uTick.Tick(4);
 	PL_Set();
 	CE_Reset();
 	for (int16_t i = len - 1; i >= 0; --i) {
@@ -48,7 +48,7 @@ bool U74HC165::Read(uint8_t* data, uint8_t len) {
 			}
 			//在上升沿装载新的数据
 			CP_Set();
-			UTick::Tick(1);
+			uTick.Tick(1);
 		}
 	}
 	CE_Set();

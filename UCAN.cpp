@@ -46,7 +46,7 @@ void UCAN::Send(uint32_t id, uint8_t* data, uint8_t size) {
 	msg.RTR = 0;
 
 	while (CAN_Transmit(_CANx, &msg) == CAN_TxStatus_NoMailBox) {
-		UTick::mWait(10);
+		uTick.mWait(10);
 	}
 }
 
@@ -58,7 +58,7 @@ void UCAN::Send(uint32_t id) {
 	msg.IDE = 0;
 
 	while (CAN_Transmit(_CANx, &msg) == CAN_TxStatus_NoMailBox) {
-		UTick::mWait(10);
+		uTick.mWait(10);
 	}
 }
 

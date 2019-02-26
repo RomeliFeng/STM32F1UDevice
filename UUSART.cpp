@@ -373,7 +373,7 @@ void UUSART::RS485StatusCtl(RS485Dir_Typedef dir) {
 		switch (dir) {
 		case RS485Dir_Rx:
 			//XXX @Romeli 转换太快会丢数，需要注意
-			UTick::Tick(1024);
+			uTick.Tick(1024);
 			RS485DirCtl(RS485Dir_Rx);
 			break;
 		case RS485Dir_Tx:

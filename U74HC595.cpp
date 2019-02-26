@@ -35,22 +35,22 @@ bool U74HC595::Write(uint8_t* data, uint8_t len) {
 		return false;
 	}
 	STCP_Reset();
-	UTick::Tick(1);
+	uTick.Tick(1);
 	for (int16_t i = len - 1; i >= 0; --i) {
 		for (uint8_t mask = 0x80; mask != 0; mask >>= 1) {
 			SHCP_Reset();
-			UTick::Tick(1);
+			uTick.Tick(1);
 			if ((mask & data[i]) != 0) {
 				DS_Set();
 			} else {
 				DS_Reset();
 			}
 			SHCP_Set();
-			UTick::Tick(5);
+			uTick.Tick(5);
 		}
 	}
 	STCP_Set();
-	UTick::Tick(1);
+	uTick.Tick(1);
 	Enable();
 	return true;
 }
