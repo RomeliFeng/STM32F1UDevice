@@ -220,8 +220,6 @@ void UStepMotor::SetLimit(Dir_Typedef dir, uint8_t limit) {
 Status_Typedef UStepMotor::Move(uint32_t step, Dir_Typedef dir, bool sync) {
 	//停止如果有的运动
 	Stop();
-	//锁定当前运动
-	_busy = true;
 	//设置方向
 	SetDir(dir);
 	//检测保护限位
@@ -229,6 +227,9 @@ Status_Typedef UStepMotor::Move(uint32_t step, Dir_Typedef dir, bool sync) {
 		//限位保护触发
 		return Status_Error;
 	}
+
+	//状态正常锁定当前运动
+	_busy = true;
 	//使能电机
 	Lock();
 	//清零当前计数
@@ -523,8 +524,12 @@ void UStepMotor::IRQ_AccUnit() {
 		SetSpeed(_accUnit->GetCurSpeed());
 		break;
 	case Flow_Stop:
-		Stop();
-		DoMoveDoneEvent();
+		StopForce();
+		if (!_emo) {
+			DoMoveDoneEvent();
+		} else {
+			_emo = false;
+		}
 		//直接返回，防止下一次运动被清除标志
 		return;
 	default:
