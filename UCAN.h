@@ -35,18 +35,18 @@ public:
 
 	uint8_t Available();
 	void SetEventPool(UEvent rcvEvent, UEventPool* pool);
-	void IRQ();
+	void IRQ_CAN();
 protected:
 	CAN_TypeDef* _CANx;
-	UEventPool* _ePool;
-	UIT_Typedef _it;
+	UEventPool* _receiveEventPool;
+	UIT_Typedef _UIT_CANx_RX0;
 	Data_Typedef* _rxBuf;
 	uint8_t _rxBufSize;
 	uint8_t _rxBufStart, _rxBufEnd;
 
 	virtual void GPIOInit() = 0;
 	virtual void CANRCCInit() = 0;
-	void NVICInit();
+	void ITInit();
 	void CANInit(uint16_t idH, uint16_t idL, uint16_t maskIdH, uint16_t maskIdL,
 			uint8_t CAN_SJW, uint8_t CAN_BS1, uint8_t CAN_BS2,
 			uint16_t prescaler);

@@ -13,8 +13,8 @@ UCAN::UCAN(uint8_t rxBufSize, CAN_TypeDef* CANx, UIT_Typedef& it) {
 	ReceiveEvent = nullptr;
 
 	_CANx = CANx;
-	_ePool = nullptr;
-	_it = it;
+	_receiveEventPool = nullptr;
+	_UIT_CANx_RX0 = it;
 
 	_rxBufSize = rxBufSize;
 	_rxBuf = new Data_Typedef[_rxBufSize];
@@ -29,7 +29,7 @@ UCAN::~UCAN() {
 void UCAN::Init(uint16_t idH, uint16_t idL, uint16_t maskIdH, uint16_t maskIdL,
 		uint8_t CAN_SJW, uint8_t CAN_BS1, uint8_t CAN_BS2, uint16_t prescaler) {
 	GPIOInit();
-	NVICInit();
+	ITInit();
 	CANInit(idH, idL, maskIdH, maskIdL, CAN_SJW, CAN_BS1, CAN_BS2, prescaler);
 }
 
@@ -80,10 +80,10 @@ uint8_t UCAN::Available() {
 
 void UCAN::SetEventPool(UEvent rcvEvent, UEventPool* pool) {
 	ReceiveEvent = rcvEvent;
-	_ePool = pool;
+	_receiveEventPool = pool;
 }
 
-void UCAN::IRQ() {
+void UCAN::IRQ_CAN() {
 	CanRxMsg msg;
 	CAN_Receive(_CANx, CAN_FIFO0, &msg);
 	_rxBuf[_rxBufEnd].id = msg.StdId;
@@ -95,8 +95,8 @@ void UCAN::IRQ() {
 	CAN_ClearITPendingBit(_CANx, CAN_IT_FMP0); // 清除中断
 
 	if (ReceiveEvent != nullptr) {
-		if (_ePool != nullptr) {
-			_ePool->Insert(ReceiveEvent);
+		if (_receiveEventPool != nullptr) {
+			_receiveEventPool->Insert(ReceiveEvent);
 		} else {
 			ReceiveEvent();
 		}
@@ -123,13 +123,13 @@ void UCAN::CANRCCInit() {
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_CAN1, ENABLE);
 }
 
-void UCAN::NVICInit() {
+void UCAN::ITInit() {
 	NVIC_InitTypeDef NVIC_InitStructure;
 
-	NVIC_InitStructure.NVIC_IRQChannel = _it.NVIC_IRQChannel;
+	NVIC_InitStructure.NVIC_IRQChannel = _UIT_CANx_RX0.NVIC_IRQChannel;
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =
-			_it.PreemptionPriority;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = _it.SubPriority;
+			_UIT_CANx_RX0.PreemptionPriority;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = _UIT_CANx_RX0.SubPriority;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStructure);
 }
